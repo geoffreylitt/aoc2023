@@ -31,28 +31,6 @@ treb7uchet`;
 
 const clone = <T extends any>(obj: T): T => JSON.parse(JSON.stringify(obj));
 
-const sheep = (
-  <svg
-    width="100px"
-    height="100px"
-    viewBox="0 0 200 200"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <circle cx="100" cy="130" r="40" fill="white" />
-
-    <circle cx="100" cy="70" r="30" fill="black" />
-
-    <circle cx="90" cy="65" r="5" fill="white" />
-    <circle cx="110" cy="65" r="5" fill="white" />
-
-    <rect x="85" y="170" width="10" height="20" fill="black" />
-    <rect x="105" y="170" width="10" height="20" fill="black" />
-
-    <rect x="80" y="50" width="40" height="10" fill="green" />
-    <rect x="90" y="30" width="20" height="20" fill="green" />
-  </svg>
-);
-
 type ProgramState = {
   lines: {
     text: string;
@@ -139,19 +117,29 @@ const solve = (input: string): ProgramState[] => {
 
 const programStates = solve(SAMPLE_INPUT);
 
+const Y_MARGIN = 50;
+const CHAR_SIZE = 40;
+
 export function Day1() {
   const [activeStateIndex, setActiveStateIndex] = useState(0);
+  const [paused, setPaused] = useState(false);
   const programState = programStates[activeStateIndex];
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setActiveStateIndex((i) => (i + 1) % programStates.length);
-    }, 500);
+    if (!paused) {
+      const interval = setInterval(() => {
+        setActiveStateIndex((i) => {
+          if (i + 1 === programStates.length) {
+            setPaused(true);
+            return i;
+          }
+          return (i + 1) % programStates.length;
+        });
+      }, 200);
+      return () => clearInterval(interval);
+    }
+  }, [paused]);
 
-    return () => clearInterval(interval);
-  }, []);
-
-  const charSize = 30;
   const maxLineLength = Math.max(
     ...programState.lines.map((line) => line.text.length)
   );
@@ -159,6 +147,9 @@ export function Day1() {
   return (
     <div className="p-8">
       <h1 className=" text-xl mb-4">Day 1</h1>
+      <button onClick={() => setPaused((paused) => !paused)}>
+        {paused ? "Play" : "Pause"}
+      </button>
       <div className="flex">
         <div className="w-64 bg-gray-200 h-screen overflow-y-auto">
           {programStates.map((programState, i) => (
@@ -176,26 +167,25 @@ export function Day1() {
           <svg className="w-full h-full">
             {programState.lines.map((line, i) => (
               <g>
-                <g transform={`translate(0, ${i * (charSize * 1.1)})`}>
+                <g
+                  transform={`translate(0, ${
+                    i * (CHAR_SIZE * 1.1) + Y_MARGIN
+                  })`}
+                >
                   {line.text.split("").map((char, j) => (
-                    <g transform={`translate(${j * (charSize * 1.1)}, 0)`}>
+                    <g transform={`translate(${j * (CHAR_SIZE * 1.1)}, 0)`}>
                       <rect
                         x={0}
                         y={0}
-                        width={charSize}
-                        height={charSize}
-                        fill={`${
-                          programState.activeLine === i &&
-                          programState.activeChar === j
-                            ? "rgb(255, 0, 0, 0.3)"
-                            : "rgb(255, 255, 255, 0.1)"
-                        }`}
+                        width={CHAR_SIZE}
+                        height={CHAR_SIZE}
+                        fill="rgb(255, 255, 255, 0.1"
                         stroke="rgb(0, 0, 0, 0.3)"
                       />
                       <text
-                        x={charSize * 0.2}
-                        y={charSize * 0.8}
-                        fontSize={charSize * 0.8}
+                        x={CHAR_SIZE * 0.2}
+                        y={CHAR_SIZE * 0.8}
+                        fontSize={CHAR_SIZE * 0.8}
                       >
                         {char}
                       </text>
@@ -203,24 +193,24 @@ export function Day1() {
                   ))}
                   <g
                     transform={`translate(${
-                      charSize * 1.1 + maxLineLength * (charSize * 1.1)
+                      CHAR_SIZE * 1.1 + maxLineLength * (CHAR_SIZE * 1.1)
                     }, 0)`}
                   >
                     {line.calibrationString.map((char, j) => (
-                      <g transform={`translate(${j * (charSize * 1.1)}, 0)`}>
+                      <g transform={`translate(${j * (CHAR_SIZE * 1.1)}, 0)`}>
                         <rect
                           x={0}
                           y={0}
-                          width={charSize}
-                          height={charSize}
+                          width={CHAR_SIZE}
+                          height={CHAR_SIZE}
                           fill="white"
                           stroke="rgba(0, 0, 0)"
                           strokeOpacity={0.3}
                         />
                         <text
-                          x={charSize * 0.2}
-                          y={charSize * 0.8}
-                          fontSize={charSize * 0.8}
+                          x={CHAR_SIZE * 0.2}
+                          y={CHAR_SIZE * 0.8}
+                          fontSize={CHAR_SIZE * 0.8}
                           fontFamily="Schoolbell"
                           fill="rgb(0, 0, 100, 0.8)"
                         >
@@ -234,32 +224,67 @@ export function Day1() {
             ))}
             <g
               transform={`translate(${
-                (maxLineLength + 1) * (charSize * 1.1)
-              }, ${programState.lines.length * (charSize * 1.1)})`}
+                (maxLineLength + 1) * (CHAR_SIZE * 1.1)
+              }, ${
+                programState.lines.length * (CHAR_SIZE * 1.1) + Y_MARGIN + 10
+              })`}
             >
               <rect
                 x={0}
                 y={0}
                 width={
-                  charSize *
+                  CHAR_SIZE *
                   programStates[programStates.length - 1].solution.toString()
                     .length
                 }
-                height={charSize}
-                fill="white"
+                height={CHAR_SIZE}
+                fill={`${
+                  activeStateIndex === programStates.length - 1
+                    ? "rgb(0, 255, 0, 0.4)"
+                    : "white"
+                }`}
                 stroke="rgba(0, 0, 0)"
                 strokeOpacity={0.3}
               ></rect>
               <text
-                x={charSize * 0.3}
-                y={charSize * 0.9}
-                fontSize={charSize * 1.3}
+                x={CHAR_SIZE * 0.3}
+                y={CHAR_SIZE * 0.9}
+                fontSize={CHAR_SIZE * 1.3}
                 fontFamily="Schoolbell"
-                fill="rgb(0, 0, 100, 0.8)"
+                fill={`${
+                  activeStateIndex === programStates.length - 1
+                    ? "black"
+                    : "rgba(0, 0, 0, 0.5)"
+                }`}
               >
                 {programState.solution.toString()}
               </text>
             </g>
+            {programState.activeLine !== undefined &&
+              programState.activeChar !== undefined && (
+                <g
+                  className="transition-all"
+                  transform={`translate(${
+                    programState.activeChar * (CHAR_SIZE * 1.1)
+                  }, ${
+                    programState.activeLine * (CHAR_SIZE * 1.1) + Y_MARGIN
+                  })`}
+                >
+                  <circle
+                    cx={CHAR_SIZE / 2}
+                    cy={CHAR_SIZE / 2}
+                    r={CHAR_SIZE / 2}
+                    fill="rgba(0, 0, 0, 0.2)"
+                  />
+                  <image
+                    href="/sheep.svg"
+                    x="0"
+                    y={CHAR_SIZE * -1}
+                    height={CHAR_SIZE}
+                    width={CHAR_SIZE}
+                  />
+                </g>
+              )}
           </svg>
         </div>
       </div>
