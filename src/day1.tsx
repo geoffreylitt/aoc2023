@@ -42,6 +42,7 @@ type ProgramState = {
   activeChar: number;
   solution: number;
   message?: string;
+  solved?: boolean;
 };
 
 // The solve function takes the puzzle input and produces a
@@ -102,6 +103,15 @@ const solve = (input: string): ProgramState[] => {
     }
   }
 
+  programStates.push({
+    activeLine: 0,
+    activeChar: 0,
+    lines: clone(lines),
+    solution,
+    message: "🎉",
+    solved: true,
+  });
+
   return programStates;
 };
 
@@ -133,6 +143,22 @@ export function Day1() {
   const maxLineLength = Math.max(
     ...programState.lines.map((line) => line.text.length)
   );
+
+  let sheepPosition = { x: 0, y: 0 };
+  if (programState.solved) {
+    sheepPosition = {
+      x: (maxLineLength + 1) * (CHAR_SIZE * 1.1) + 10,
+      y: programState.lines.length * (CHAR_SIZE * 1.1) + Y_MARGIN + 10,
+    };
+  } else if (
+    programState.activeLine !== undefined &&
+    programState.activeChar !== undefined
+  ) {
+    sheepPosition = {
+      x: programState.activeChar * (CHAR_SIZE * 1.1),
+      y: programState.activeLine * (CHAR_SIZE * 1.1) + Y_MARGIN,
+    };
+  }
 
   return (
     <div className="p-8">
@@ -245,46 +271,39 @@ export function Day1() {
                 {programState.solution.toString()}
               </text>
             </g>
-            {programState.activeLine !== undefined &&
-              programState.activeChar !== undefined && (
-                <g
-                  className="transition-all"
-                  transform={`translate(${
-                    programState.activeChar * (CHAR_SIZE * 1.1)
-                  }, ${
-                    programState.activeLine * (CHAR_SIZE * 1.1) + Y_MARGIN
-                  })`}
-                >
-                  <circle
-                    cx={CHAR_SIZE / 1.5}
-                    cy={CHAR_SIZE / 1.5}
-                    r={CHAR_SIZE / 1.5}
-                    fill="rgba(0, 0, 0, 0.2)"
-                    transform={`translate(-10, -13)`}
-                  />
+            <g
+              className="transition-all"
+              transform={`translate(${sheepPosition.x}, ${sheepPosition.y})`}
+            >
+              <circle
+                cx={CHAR_SIZE / 1.5}
+                cy={CHAR_SIZE / 1.5}
+                r={CHAR_SIZE / 1.5}
+                fill="rgba(0, 0, 0, 0.1)"
+                transform={`translate(-10, -13)`}
+              />
+              <image
+                href="/sheep.svg"
+                x="0"
+                y={CHAR_SIZE * -1}
+                height={CHAR_SIZE}
+                width={CHAR_SIZE}
+              />
+              {programState.message && (
+                <g transform={`translate(${CHAR_SIZE}, ${CHAR_SIZE * -1})`}>
                   <image
-                    href="/sheep.svg"
+                    href={think}
                     x="0"
                     y={CHAR_SIZE * -1}
-                    height={CHAR_SIZE}
-                    width={CHAR_SIZE}
+                    height={CHAR_SIZE * 1.5}
+                    width={CHAR_SIZE * 1.5}
                   />
-                  {programState.message && (
-                    <g transform={`translate(${CHAR_SIZE}, ${CHAR_SIZE * -1})`}>
-                      <image
-                        href={think}
-                        x="0"
-                        y={CHAR_SIZE * -1}
-                        height={CHAR_SIZE * 1.5}
-                        width={CHAR_SIZE * 1.5}
-                      />
-                      <text fontSize={24} y={-10} x={20} fill="black">
-                        {programState.message}
-                      </text>
-                    </g>
-                  )}
+                  <text fontSize={24} y={-10} x={20} fill="black">
+                    {programState.message}
+                  </text>
                 </g>
               )}
+            </g>
           </svg>
         </div>
       </div>
