@@ -1,6 +1,7 @@
 // THE PROBLEM
 
 import { useEffect, useState } from "react";
+import think from "./assets/think.svg";
 
 // Something is wrong with global snow production, and you've been selected to take a look. The Elves have even given you a map; on it, they've used stars to mark the top fifty locations that are likely to be having problems.
 
@@ -40,7 +41,7 @@ type ProgramState = {
   activeLine: number;
   activeChar: number;
   solution: number;
-  message: string;
+  message?: string;
 };
 
 // The solve function takes the puzzle input and produces a
@@ -63,7 +64,6 @@ const solve = (input: string): ProgramState[] => {
         activeChar,
         lines: clone(lines),
         solution,
-        message: "looking at the next character...",
       });
       if (line.text[activeChar] > "0" && line.text[activeChar] < "9") {
         line.calibrationString[0] = line.text[activeChar];
@@ -72,7 +72,7 @@ const solve = (input: string): ProgramState[] => {
           activeChar,
           lines: clone(lines),
           solution,
-          message: "We found the first digit! Now to find the second digit..",
+          message: "👍",
         });
         break;
       }
@@ -85,31 +85,21 @@ const solve = (input: string): ProgramState[] => {
         activeChar,
         lines: clone(lines),
         solution,
-        message: "looking at the previous character...",
       });
       if (line.text[activeChar] > "0" && line.text[activeChar] < "9") {
         line.calibrationString[1] = line.text[activeChar];
+        line.calibrationValue = parseInt(line.calibrationString.join(""));
+        solution += line.calibrationValue;
         programStates.push({
           activeLine,
           activeChar,
           lines: clone(lines),
           solution,
-          message: "We found the second digit!",
+          message: "‼️",
         });
         break;
       }
     }
-
-    line.calibrationValue = parseInt(line.calibrationString.join(""));
-    solution += line.calibrationValue;
-
-    programStates.push({
-      activeLine,
-      activeChar: line.text.length,
-      lines: clone(lines),
-      solution,
-      message: "We've finished this line! Moving on to the next...",
-    });
   }
 
   return programStates;
@@ -117,7 +107,7 @@ const solve = (input: string): ProgramState[] => {
 
 const programStates = solve(SAMPLE_INPUT);
 
-const Y_MARGIN = 50;
+const Y_MARGIN = 100;
 const CHAR_SIZE = 40;
 
 export function Day1() {
@@ -150,20 +140,15 @@ export function Day1() {
       <button onClick={() => setPaused((paused) => !paused)}>
         {paused ? "Play" : "Pause"}
       </button>
+      <input
+        type="range"
+        min="0"
+        max={programStates.length - 1}
+        value={activeStateIndex}
+        onChange={(e) => setActiveStateIndex(Number(e.target.value))}
+      />
       <div className="flex">
-        <div className="w-64 bg-gray-200 h-screen overflow-y-auto">
-          {programStates.map((programState, i) => (
-            <div
-              onMouseEnter={() => setActiveStateIndex(i)}
-              className={`p-1 border-b border-gray-400 ${
-                activeStateIndex === i ? "bg-gray-300" : ""
-              }`}
-            >
-              {programState.message}
-            </div>
-          ))}
-        </div>
-        <div className="flex-grow bg-gray-100 p-4 text-[50px] font-mono">
+        <div className="flex-grow bg-gray-100 p-4 text-[50px] font-mono h-screen">
           <svg className="w-full h-full">
             {programState.lines.map((line, i) => (
               <g>
@@ -271,10 +256,11 @@ export function Day1() {
                   })`}
                 >
                   <circle
-                    cx={CHAR_SIZE / 2}
-                    cy={CHAR_SIZE / 2}
-                    r={CHAR_SIZE / 2}
+                    cx={CHAR_SIZE / 1.5}
+                    cy={CHAR_SIZE / 1.5}
+                    r={CHAR_SIZE / 1.5}
                     fill="rgba(0, 0, 0, 0.2)"
+                    transform={`translate(-10, -13)`}
                   />
                   <image
                     href="/sheep.svg"
@@ -283,6 +269,20 @@ export function Day1() {
                     height={CHAR_SIZE}
                     width={CHAR_SIZE}
                   />
+                  {programState.message && (
+                    <g transform={`translate(${CHAR_SIZE}, ${CHAR_SIZE * -1})`}>
+                      <image
+                        href={think}
+                        x="0"
+                        y={CHAR_SIZE * -1}
+                        height={CHAR_SIZE * 1.5}
+                        width={CHAR_SIZE * 1.5}
+                      />
+                      <text fontSize={24} y={-10} x={20} fill="black">
+                        {programState.message}
+                      </text>
+                    </g>
+                  )}
                 </g>
               )}
           </svg>
