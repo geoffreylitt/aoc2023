@@ -151,6 +151,11 @@ export function Day1() {
     return () => clearInterval(interval);
   }, []);
 
+  const charSize = 30;
+  const maxLineLength = Math.max(
+    ...programState.lines.map((line) => line.text.length)
+  );
+
   return (
     <div className="p-8">
       <h1 className=" text-xl mb-4">Day 1</h1>
@@ -168,36 +173,94 @@ export function Day1() {
           ))}
         </div>
         <div className="flex-grow bg-gray-100 p-4 text-[50px] font-mono">
-          {programState.lines.map((line, i) => (
-            <div>
-              {line.text.split("").map((char, j) => (
-                <div
-                  className={`px-2 border border-gray-300 inline-block ${
-                    programState.activeLine === i &&
-                    programState.activeChar === j &&
-                    "bg-red-300"
-                  }`}
-                >
-                  <div className="relative">
-                    <div className="absolute left-10 bg-black bg-opacity-10">
-                      {programState.activeLine === i &&
-                        programState.activeChar === j &&
-                        sheep}
-                    </div>
-                  </div>
-                  {char}
-                </div>
-              ))}
-
-              <span className="mx-2"></span>
-              {line.calibrationString.map((char) => (
-                <span className={`border border-green-300 bg-green-200 px-2`}>
-                  {char === "" ? "?" : char}
-                </span>
-              ))}
-            </div>
-          ))}
-          TOTAL: {programState.solution}
+          <svg className="w-full h-full">
+            {programState.lines.map((line, i) => (
+              <g>
+                <g transform={`translate(0, ${i * (charSize * 1.1)})`}>
+                  {line.text.split("").map((char, j) => (
+                    <g transform={`translate(${j * (charSize * 1.1)}, 0)`}>
+                      <rect
+                        x={0}
+                        y={0}
+                        width={charSize}
+                        height={charSize}
+                        fill={`${
+                          programState.activeLine === i &&
+                          programState.activeChar === j
+                            ? "rgb(255, 0, 0, 0.3)"
+                            : "rgb(255, 255, 255, 0.1)"
+                        }`}
+                        stroke="rgb(0, 0, 0, 0.3)"
+                      />
+                      <text
+                        x={charSize * 0.2}
+                        y={charSize * 0.8}
+                        fontSize={charSize * 0.8}
+                      >
+                        {char}
+                      </text>
+                    </g>
+                  ))}
+                  <g
+                    transform={`translate(${
+                      charSize * 1.1 + maxLineLength * (charSize * 1.1)
+                    }, 0)`}
+                  >
+                    {line.calibrationString.map((char, j) => (
+                      <g transform={`translate(${j * (charSize * 1.1)}, 0)`}>
+                        <rect
+                          x={0}
+                          y={0}
+                          width={charSize}
+                          height={charSize}
+                          fill="white"
+                          stroke="rgba(0, 0, 0)"
+                          strokeOpacity={0.3}
+                        />
+                        <text
+                          x={charSize * 0.2}
+                          y={charSize * 0.8}
+                          fontSize={charSize * 0.8}
+                          fontFamily="Schoolbell"
+                          fill="rgb(0, 0, 100, 0.8)"
+                        >
+                          {char}
+                        </text>
+                      </g>
+                    ))}
+                  </g>
+                </g>
+              </g>
+            ))}
+            <g
+              transform={`translate(${
+                (maxLineLength + 1) * (charSize * 1.1)
+              }, ${programState.lines.length * (charSize * 1.1)})`}
+            >
+              <rect
+                x={0}
+                y={0}
+                width={
+                  charSize *
+                  programStates[programStates.length - 1].solution.toString()
+                    .length
+                }
+                height={charSize}
+                fill="white"
+                stroke="rgba(0, 0, 0)"
+                strokeOpacity={0.3}
+              ></rect>
+              <text
+                x={charSize * 0.3}
+                y={charSize * 0.9}
+                fontSize={charSize * 1.3}
+                fontFamily="Schoolbell"
+                fill="rgb(0, 0, 100, 0.8)"
+              >
+                {programState.solution.toString()}
+              </text>
+            </g>
+          </svg>
         </div>
       </div>
     </div>
