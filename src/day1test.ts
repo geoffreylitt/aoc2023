@@ -1,0 +1,23 @@
+export const part1input = `four9one
+bbzhsmnmtf8kftwosevenxfkssgrcjthree
+6pkkcddsixsixjgnjvdtjtwo
+4four45seven7nine7two
+rcssix4
+thfjtb56c
+kkdhmmvvmthreezxqzqmb4khprbldcr
+65bnhfgcgfxgqflblvjdhhtvzpfoureightfive
+8eightvdj
+h61gjgfhrgndb725
+7rzm2five
+9167ddtxjpxb6
+4nine36knlfjmdgfourdmczsxv
+ljnff279
+nineeightsixzsfiveseven1jqnxbhhd
+jptwoeight6fourfrbpgsmkgl
+znfqfjcspf8md
+sixthree7qzj
+39cfncbzj48two2
+52eight9fivefivesix
+26nine
+fsgpvxpqtk2eightlvb1ninebflbsskdbthztgvcl
+`;

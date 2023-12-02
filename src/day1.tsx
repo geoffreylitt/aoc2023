@@ -6,6 +6,7 @@ import sheepSide from "./assets/sheep-side.png";
 import sheepParty from "./assets/sheep-party.png";
 import think from "./assets/think.svg";
 import { part1input } from "./day1input";
+import React from "react";
 
 // Something is wrong with global snow production, and you've been selected to take a look. The Elves have even given you a map; on it, they've used stars to mark the top fifty locations that are likely to be having problems.
 
@@ -34,13 +35,12 @@ pqr3stu8vwx
 a1b2c3d4e5f
 treb7uchet`;
 
-const clone = <T extends any>(obj: T): T => JSON.parse(JSON.stringify(obj));
+// const clone = <T extends any>(obj: T): T => JSON.parse(JSON.stringify(obj));
+const clone = window.structuredClone;
 
 type ProgramState = {
-  lineResults: {
-    calibrationString: [string, string];
-    calibrationValue: number;
-  }[];
+  calibrationStrings: [string, string][];
+  calibrationValues: number[];
   activeLine: number;
   activeChar: number;
   solution: number;
@@ -55,29 +55,28 @@ type ProgramState = {
 const solve = (input: string): ProgramState[] => {
   const programStates: ProgramState[] = [];
   const inputLines = input.split("\n");
-  const lineResults = inputLines.map(() => ({
-    calibrationString: ["", ""] as [string, string],
-    calibrationValue: 0,
-  }));
+  const calibrationStrings = inputLines.map(() => ["", ""] as [string, string]);
+  const calibrationValues = inputLines.map(() => 0);
   let solution = 0;
 
-  for (let activeLine = 0; activeLine < lineResults.length; activeLine++) {
-    const results = lineResults[activeLine];
+  for (let activeLine = 0; activeLine < inputLines.length; activeLine++) {
     const text = inputLines[activeLine];
     for (let activeChar = 0; activeChar < text.length; activeChar++) {
       programStates.push({
         activeLine,
         activeChar,
-        lineResults: clone(lineResults),
         solution,
+        calibrationStrings: clone(calibrationStrings),
+        calibrationValues: clone(calibrationValues),
         status: "searchForward",
       });
-      if (text[activeChar] > "0" && text[activeChar] < "9") {
-        results.calibrationString[0] = text[activeChar];
+      if (text[activeChar] > "0" && text[activeChar] <= "9") {
+        calibrationStrings[activeLine][0] = text[activeChar];
         programStates.push({
           activeLine,
           activeChar,
-          lineResults: clone(lineResults),
+          calibrationStrings: clone(calibrationStrings),
+          calibrationValues: clone(calibrationValues),
           solution,
           message: "👍",
           status: "found",
@@ -91,18 +90,23 @@ const solve = (input: string): ProgramState[] => {
       programStates.push({
         activeLine,
         activeChar,
-        lineResults: clone(lineResults),
+        calibrationStrings: clone(calibrationStrings),
+        calibrationValues: clone(calibrationValues),
         solution,
         status: "searchBackward",
       });
-      if (text[activeChar] > "0" && text[activeChar] < "9") {
-        results.calibrationString[1] = text[activeChar];
-        results.calibrationValue = parseInt(results.calibrationString.join(""));
-        solution += results.calibrationValue;
+      if (text[activeChar] > "0" && text[activeChar] <= "9") {
+        calibrationStrings[activeLine][1] = text[activeChar];
+        const calibrationValue = parseInt(
+          calibrationStrings[activeLine].join("")
+        );
+        calibrationValues[activeLine] = calibrationValue;
+        solution += calibrationValue;
         programStates.push({
           activeLine,
           activeChar,
-          lineResults: clone(lineResults),
+          calibrationStrings: clone(calibrationStrings),
+          calibrationValues: clone(calibrationValues),
           solution,
           message: "‼️",
           status: "found",
@@ -115,7 +119,8 @@ const solve = (input: string): ProgramState[] => {
   programStates.push({
     activeLine: 0,
     activeChar: 0,
-    lineResults: clone(lineResults),
+    calibrationStrings: clone(calibrationStrings),
+    calibrationValues: clone(calibrationValues),
     solution,
     solved: true,
     status: "solved",
@@ -125,17 +130,15 @@ const solve = (input: string): ProgramState[] => {
 };
 
 const Y_MARGIN = 100;
-const CHAR_SIZE = 40;
-const SHEEP_SIZE = CHAR_SIZE * 1.8;
 
-const sheepImage = (status: ProgramState["status"]) => {
+const sheepImage = (status: ProgramState["status"], SHEEP_SIZE: number) => {
   switch (status) {
     case "searchForward":
       return (
         <image
           href={sheepSide}
-          x={-10}
-          y={SHEEP_SIZE * -1 - 5}
+          x={SHEEP_SIZE * -0.2}
+          y={SHEEP_SIZE * -1}
           height={SHEEP_SIZE}
           width={SHEEP_SIZE}
         />
@@ -144,8 +147,8 @@ const sheepImage = (status: ProgramState["status"]) => {
       return (
         <image
           href={sheepSide}
-          x={SHEEP_SIZE * -1 + 20}
-          y={SHEEP_SIZE * -1 - 5}
+          x={SHEEP_SIZE * -0.6}
+          y={SHEEP_SIZE * -1}
           height={SHEEP_SIZE}
           width={SHEEP_SIZE}
           transform="scale(-1, 1)"
@@ -175,6 +178,44 @@ const sheepImage = (status: ProgramState["status"]) => {
   }
 };
 
+const InputLines = ({
+  inputLines,
+  CHAR_SIZE,
+}: {
+  inputLines: string[];
+  CHAR_SIZE: number;
+}) => {
+  return inputLines.map((line, i) => (
+    <g>
+      <g transform={`translate(0, ${i * (CHAR_SIZE * 1.1) + Y_MARGIN})`}>
+        {inputLines[i].split("").map((char, j) => (
+          <g key={j} transform={`translate(${j * (CHAR_SIZE * 1.1)}, 0)`}>
+            <rect
+              x={0}
+              y={0}
+              width={CHAR_SIZE}
+              height={CHAR_SIZE}
+              fill="rgb(255, 255, 255, 0.1"
+              stroke="rgb(0, 0, 0, 0.3)"
+            />
+            <text
+              x={CHAR_SIZE * 0.2}
+              y={CHAR_SIZE * 0.8}
+              fontSize={CHAR_SIZE * 0.8}
+            >
+              {char}
+            </text>
+          </g>
+        ))}
+      </g>
+    </g>
+  ));
+};
+
+const MemoizedInputLines = React.memo(InputLines, (prevProps, nextProps) => {
+  prevProps.inputLines === nextProps.inputLines;
+});
+
 export function Day1() {
   const [input, setInput] = useState(SAMPLE_INPUT);
   const inputLines = useMemo(() => input.split("\n"), [input]);
@@ -182,6 +223,17 @@ export function Day1() {
   const [paused, setPaused] = useState(false);
   const programStates = useMemo(() => solve(input), [input]);
   const programState = programStates[activeStateIndex];
+  // const CHAR_SIZE = SVG_HEIGHT / inputLines.length / 10;
+  const CHAR_SIZE = 30;
+  const SHEEP_SIZE = CHAR_SIZE * 1.8;
+  const maxLineLength = Math.max(...inputLines.map((line) => line.length));
+  const SVG_HEIGHT = CHAR_SIZE * 1.1 * inputLines.length + Y_MARGIN;
+  const SVG_WIDTH = CHAR_SIZE * maxLineLength;
+  const [speed, setSpeed] = useState(2);
+
+  useEffect(() => {
+    setActiveStateIndex(0);
+  }, [input]);
 
   useEffect(() => {
     if (!paused) {
@@ -193,20 +245,16 @@ export function Day1() {
           }
           return (i + 1) % programStates.length;
         });
-      }, 200);
+      }, 400 / speed);
       return () => clearInterval(interval);
     }
-  }, [paused]);
-
-  const maxLineLength = Math.max(
-    ...programState.lineResults.map((line, i) => inputLines[i].length)
-  );
+  }, [paused, speed, programStates]);
 
   let sheepPosition = { x: 0, y: 0 };
   if (programState.solved) {
     sheepPosition = {
-      x: (maxLineLength + 1) * (CHAR_SIZE * 1.1) + 100,
-      y: programState.lineResults.length * (CHAR_SIZE * 1.1) + Y_MARGIN + 10,
+      x: (maxLineLength + 1) * (CHAR_SIZE * 1.1) + SHEEP_SIZE * 2,
+      y: inputLines.length * (CHAR_SIZE * 1.1) + Y_MARGIN,
     };
   } else if (
     programState.activeLine !== undefined &&
@@ -221,149 +269,157 @@ export function Day1() {
   return (
     <div className="p-8">
       <h1 className=" text-xl mb-4">Day 1</h1>
-      <button onClick={() => setPaused((paused) => !paused)}>
+      <div>
+        <select onChange={(e) => setInput(e.target.value)}>
+          <option value={SAMPLE_INPUT}>Sample Input</option>
+          <option value={part1input}>Real Input</option>
+        </select>
+      </div>
+
+      <button
+        className="border border-gray-500 rounded-md px-2 py-1 mr-4"
+        onClick={() => setPaused((paused) => !paused)}
+      >
         {paused ? "Play" : "Pause"}
       </button>
+
+      <span>Step:</span>
       <input
         type="range"
         min="0"
         max={programStates.length - 1}
         value={activeStateIndex}
         onChange={(e) => setActiveStateIndex(Number(e.target.value))}
+        className="mr-2"
+      />
+      <span>Speed:</span>
+      <input
+        type="range"
+        min="1"
+        max="20"
+        value={speed}
+        onChange={(e) => setSpeed(Number(e.target.value))}
       />
       <div className="flex">
-        <div className="flex-grow bg-gray-100 p-4 text-[50px] font-mono h-screen">
-          <svg className="w-full h-full">
-            {programState.lineResults.map((line, i) => (
-              <g>
-                <g
-                  transform={`translate(0, ${
-                    i * (CHAR_SIZE * 1.1) + Y_MARGIN
-                  })`}
-                >
-                  {inputLines[i].split("").map((char, j) => (
-                    <g transform={`translate(${j * (CHAR_SIZE * 1.1)}, 0)`}>
-                      <rect
-                        x={0}
-                        y={0}
-                        width={CHAR_SIZE}
-                        height={CHAR_SIZE}
-                        fill="rgb(255, 255, 255, 0.1"
-                        stroke="rgb(0, 0, 0, 0.3)"
-                      />
-                      <text
-                        x={CHAR_SIZE * 0.2}
-                        y={CHAR_SIZE * 0.8}
-                        fontSize={CHAR_SIZE * 0.8}
-                      >
-                        {char}
-                      </text>
-                    </g>
-                  ))}
+        <div className="flex-grow bg-gray-100 p-4 text-[50px] font-mono h-screen overflow-auto">
+          <svg viewBox={`0 0 ${SVG_WIDTH * 2} ${SVG_HEIGHT * 2}`}>
+            <g transform="scale(1)">
+              <MemoizedInputLines
+                inputLines={inputLines}
+                CHAR_SIZE={CHAR_SIZE}
+              />
+              {inputLines.map((line, i) => (
+                <g>
                   <g
-                    transform={`translate(${
-                      CHAR_SIZE * 1.1 + maxLineLength * (CHAR_SIZE * 1.1)
-                    }, 0)`}
+                    transform={`translate(0, ${
+                      i * (CHAR_SIZE * 1.1) + Y_MARGIN
+                    })`}
                   >
-                    {line.calibrationString.map((char, j) => (
-                      <g transform={`translate(${j * (CHAR_SIZE * 1.1)}, 0)`}>
-                        <rect
-                          x={0}
-                          y={0}
-                          width={CHAR_SIZE}
-                          height={CHAR_SIZE}
-                          fill="white"
-                          stroke="rgba(0, 0, 0)"
-                          strokeOpacity={0.3}
-                        />
-                        <text
-                          x={CHAR_SIZE * 0.2}
-                          y={CHAR_SIZE * 0.8}
-                          fontSize={CHAR_SIZE * 0.8}
-                          fontFamily="Schoolbell"
-                          fill="rgb(0, 0, 100, 0.8)"
-                        >
-                          {char}
-                        </text>
-                      </g>
-                    ))}
+                    <g
+                      transform={`translate(${
+                        CHAR_SIZE * 1.1 + maxLineLength * (CHAR_SIZE * 1.1)
+                      }, 0)`}
+                    >
+                      {programState.calibrationStrings[i].map((char, j) => (
+                        <g transform={`translate(${j * (CHAR_SIZE * 1.1)}, 0)`}>
+                          <rect
+                            x={0}
+                            y={0}
+                            width={CHAR_SIZE}
+                            height={CHAR_SIZE}
+                            fill="white"
+                            stroke="rgba(0, 0, 0)"
+                            strokeOpacity={0.3}
+                          />
+                          <text
+                            x={CHAR_SIZE * 0.2}
+                            y={CHAR_SIZE * 0.8}
+                            fontSize={CHAR_SIZE * 0.8}
+                            fontFamily="Schoolbell"
+                            fill="rgb(0, 0, 100, 0.8)"
+                          >
+                            {char}
+                          </text>
+                        </g>
+                      ))}
+                    </g>
                   </g>
                 </g>
-              </g>
-            ))}
-            <g
-              transform={`translate(${
-                (maxLineLength + 1) * (CHAR_SIZE * 1.1)
-              }, ${
-                programState.lineResults.length * (CHAR_SIZE * 1.1) +
-                Y_MARGIN +
-                10
-              })`}
-            >
-              <rect
-                x={0}
-                y={0}
-                width={
-                  CHAR_SIZE *
-                  programStates[programStates.length - 1].solution.toString()
-                    .length
-                }
-                height={CHAR_SIZE}
-                fill={`${
-                  activeStateIndex === programStates.length - 1
-                    ? "rgb(0, 255, 0, 0.4)"
-                    : "white"
-                }`}
-                stroke="rgba(0, 0, 0)"
-                strokeOpacity={0.3}
-              ></rect>
-              <text
-                x={CHAR_SIZE * 0.3}
-                y={CHAR_SIZE * 0.9}
-                fontSize={CHAR_SIZE * 1.3}
-                fontFamily="Schoolbell"
-                fill={`${
-                  activeStateIndex === programStates.length - 1
-                    ? "black"
-                    : "rgba(0, 0, 0, 0.5)"
-                }`}
+              ))}
+              <g
+                transform={`translate(${
+                  (maxLineLength + 1) * (CHAR_SIZE * 1.1)
+                }, ${inputLines.length * (CHAR_SIZE * 1.1) + Y_MARGIN + 10})`}
               >
-                {programState.solution.toString()}
-              </text>
-            </g>
-            <g
-              className="transition-all"
-              transform={`translate(${sheepPosition.x}, ${sheepPosition.y})`}
-            >
-              {!programState.solved && (
-                <circle
-                  cx={CHAR_SIZE / 1.5}
-                  cy={CHAR_SIZE / 1.5}
-                  r={CHAR_SIZE / 1.5}
-                  fill="rgba(0, 0, 0, 0.1)"
-                  transform={`translate(-10, -13)`}
-                />
-              )}
-              {sheepImage(programState.status)}
-              {programState.message && (
-                <g transform={`translate(${CHAR_SIZE}, ${CHAR_SIZE * -1})`}>
-                  <image
-                    href={think}
-                    x="0"
-                    y={SHEEP_SIZE * -1}
-                    height={CHAR_SIZE * 1.5}
-                    width={CHAR_SIZE * 1.5}
+                <rect
+                  x={0}
+                  y={0}
+                  width={
+                    CHAR_SIZE *
+                    programStates[programStates.length - 1].solution.toString()
+                      .length
+                  }
+                  height={CHAR_SIZE}
+                  fill={`${
+                    activeStateIndex === programStates.length - 1
+                      ? "rgb(0, 255, 0, 0.4)"
+                      : "white"
+                  }`}
+                  stroke="rgba(0, 0, 0)"
+                  strokeOpacity={0.3}
+                ></rect>
+                <text
+                  x={CHAR_SIZE * 0.3}
+                  y={CHAR_SIZE * 0.9}
+                  fontSize={CHAR_SIZE * 1.3}
+                  fontFamily="Schoolbell"
+                  fill={`${
+                    activeStateIndex === programStates.length - 1
+                      ? "black"
+                      : "rgba(0, 0, 0, 0.5)"
+                  }`}
+                >
+                  {programState.solution.toString()}
+                </text>
+              </g>
+              <g
+                className={`${
+                  speed < 3 ? "transition-all duration-200 ease-out" : ""
+                }`}
+                transform={`translate(${sheepPosition.x}, ${sheepPosition.y})`}
+              >
+                {!programState.solved && (
+                  <circle
+                    cx={CHAR_SIZE / 1.5}
+                    cy={CHAR_SIZE / 1.5}
+                    r={CHAR_SIZE / 1.5}
+                    fill="rgba(0, 0, 0, 0.1)"
+                    transform={`translate(${CHAR_SIZE * -0.2},${
+                      CHAR_SIZE * -0.2
+                    })`}
                   />
-                  <text
-                    fontSize={24}
-                    y={SHEEP_SIZE * -1 + 30}
-                    x={20}
-                    fill="black"
-                  >
-                    {programState.message}
-                  </text>
-                </g>
-              )}
+                )}
+                {sheepImage(programState.status, SHEEP_SIZE)}
+                {programState.message && (
+                  <g transform={`translate(${CHAR_SIZE}, ${CHAR_SIZE * -1})`}>
+                    <image
+                      href={think}
+                      x="0"
+                      y={SHEEP_SIZE * -1}
+                      height={CHAR_SIZE * 1.5}
+                      width={CHAR_SIZE * 1.5}
+                    />
+                    <text
+                      fontSize={CHAR_SIZE * 0.8}
+                      y={SHEEP_SIZE * -0.6}
+                      x={CHAR_SIZE * 0.5}
+                      fill="black"
+                    >
+                      {programState.message}
+                    </text>
+                  </g>
+                )}
+              </g>
             </g>
           </svg>
         </div>
