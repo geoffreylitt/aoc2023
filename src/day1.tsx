@@ -1,7 +1,11 @@
 // THE PROBLEM
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import sheepFront from "./assets/sheep-front.png";
+import sheepSide from "./assets/sheep-side.png";
+import sheepParty from "./assets/sheep-party.png";
 import think from "./assets/think.svg";
+import { part1input } from "./day1input";
 
 // Something is wrong with global snow production, and you've been selected to take a look. The Elves have even given you a map; on it, they've used stars to mark the top fifty locations that are likely to be having problems.
 
@@ -33,8 +37,7 @@ treb7uchet`;
 const clone = <T extends any>(obj: T): T => JSON.parse(JSON.stringify(obj));
 
 type ProgramState = {
-  lines: {
-    text: string;
+  lineResults: {
     calibrationString: [string, string];
     calibrationValue: number;
   }[];
@@ -43,6 +46,7 @@ type ProgramState = {
   solution: number;
   message?: string;
   solved?: boolean;
+  status: "searchForward" | "searchBackward" | "found" | "solved";
 };
 
 // The solve function takes the puzzle input and produces a
@@ -50,53 +54,58 @@ type ProgramState = {
 // solution.
 const solve = (input: string): ProgramState[] => {
   const programStates: ProgramState[] = [];
-  const lines = input.split("\n").map((text) => ({
-    text,
+  const inputLines = input.split("\n");
+  const lineResults = inputLines.map(() => ({
     calibrationString: ["", ""] as [string, string],
     calibrationValue: 0,
   }));
   let solution = 0;
 
-  for (let activeLine = 0; activeLine < lines.length; activeLine++) {
-    const line = lines[activeLine];
-    for (let activeChar = 0; activeChar < line.text.length; activeChar++) {
+  for (let activeLine = 0; activeLine < lineResults.length; activeLine++) {
+    const results = lineResults[activeLine];
+    const text = inputLines[activeLine];
+    for (let activeChar = 0; activeChar < text.length; activeChar++) {
       programStates.push({
         activeLine,
         activeChar,
-        lines: clone(lines),
+        lineResults: clone(lineResults),
         solution,
+        status: "searchForward",
       });
-      if (line.text[activeChar] > "0" && line.text[activeChar] < "9") {
-        line.calibrationString[0] = line.text[activeChar];
+      if (text[activeChar] > "0" && text[activeChar] < "9") {
+        results.calibrationString[0] = text[activeChar];
         programStates.push({
           activeLine,
           activeChar,
-          lines: clone(lines),
+          lineResults: clone(lineResults),
           solution,
           message: "👍",
+          status: "found",
         });
         break;
       }
     }
 
     // now do the same thing but iterating from the back for the second digit
-    for (let activeChar = line.text.length - 1; activeChar >= 0; activeChar--) {
+    for (let activeChar = text.length - 1; activeChar >= 0; activeChar--) {
       programStates.push({
         activeLine,
         activeChar,
-        lines: clone(lines),
+        lineResults: clone(lineResults),
         solution,
+        status: "searchBackward",
       });
-      if (line.text[activeChar] > "0" && line.text[activeChar] < "9") {
-        line.calibrationString[1] = line.text[activeChar];
-        line.calibrationValue = parseInt(line.calibrationString.join(""));
-        solution += line.calibrationValue;
+      if (text[activeChar] > "0" && text[activeChar] < "9") {
+        results.calibrationString[1] = text[activeChar];
+        results.calibrationValue = parseInt(results.calibrationString.join(""));
+        solution += results.calibrationValue;
         programStates.push({
           activeLine,
           activeChar,
-          lines: clone(lines),
+          lineResults: clone(lineResults),
           solution,
           message: "‼️",
+          status: "found",
         });
         break;
       }
@@ -106,23 +115,72 @@ const solve = (input: string): ProgramState[] => {
   programStates.push({
     activeLine: 0,
     activeChar: 0,
-    lines: clone(lines),
+    lineResults: clone(lineResults),
     solution,
-    message: "🎉",
     solved: true,
+    status: "solved",
   });
 
   return programStates;
 };
 
-const programStates = solve(SAMPLE_INPUT);
-
 const Y_MARGIN = 100;
 const CHAR_SIZE = 40;
+const SHEEP_SIZE = CHAR_SIZE * 1.8;
+
+const sheepImage = (status: ProgramState["status"]) => {
+  switch (status) {
+    case "searchForward":
+      return (
+        <image
+          href={sheepSide}
+          x={-10}
+          y={SHEEP_SIZE * -1 - 5}
+          height={SHEEP_SIZE}
+          width={SHEEP_SIZE}
+        />
+      );
+    case "searchBackward":
+      return (
+        <image
+          href={sheepSide}
+          x={SHEEP_SIZE * -1 + 20}
+          y={SHEEP_SIZE * -1 - 5}
+          height={SHEEP_SIZE}
+          width={SHEEP_SIZE}
+          transform="scale(-1, 1)"
+        />
+      );
+    case "found":
+      return (
+        <image
+          href={sheepFront}
+          x={-10}
+          y={SHEEP_SIZE * -1 - 5}
+          height={SHEEP_SIZE}
+          width={SHEEP_SIZE}
+        />
+      );
+    case "solved":
+      return (
+        <image
+          href={sheepParty}
+          x={-10}
+          y={SHEEP_SIZE * -1 - 5}
+          height={SHEEP_SIZE}
+          width={SHEEP_SIZE}
+          transform="scale(2, 2)"
+        />
+      );
+  }
+};
 
 export function Day1() {
+  const [input, setInput] = useState(SAMPLE_INPUT);
+  const inputLines = useMemo(() => input.split("\n"), [input]);
   const [activeStateIndex, setActiveStateIndex] = useState(0);
   const [paused, setPaused] = useState(false);
+  const programStates = useMemo(() => solve(input), [input]);
   const programState = programStates[activeStateIndex];
 
   useEffect(() => {
@@ -141,14 +199,14 @@ export function Day1() {
   }, [paused]);
 
   const maxLineLength = Math.max(
-    ...programState.lines.map((line) => line.text.length)
+    ...programState.lineResults.map((line, i) => inputLines[i].length)
   );
 
   let sheepPosition = { x: 0, y: 0 };
   if (programState.solved) {
     sheepPosition = {
-      x: (maxLineLength + 1) * (CHAR_SIZE * 1.1) + 10,
-      y: programState.lines.length * (CHAR_SIZE * 1.1) + Y_MARGIN + 10,
+      x: (maxLineLength + 1) * (CHAR_SIZE * 1.1) + 100,
+      y: programState.lineResults.length * (CHAR_SIZE * 1.1) + Y_MARGIN + 10,
     };
   } else if (
     programState.activeLine !== undefined &&
@@ -176,14 +234,14 @@ export function Day1() {
       <div className="flex">
         <div className="flex-grow bg-gray-100 p-4 text-[50px] font-mono h-screen">
           <svg className="w-full h-full">
-            {programState.lines.map((line, i) => (
+            {programState.lineResults.map((line, i) => (
               <g>
                 <g
                   transform={`translate(0, ${
                     i * (CHAR_SIZE * 1.1) + Y_MARGIN
                   })`}
                 >
-                  {line.text.split("").map((char, j) => (
+                  {inputLines[i].split("").map((char, j) => (
                     <g transform={`translate(${j * (CHAR_SIZE * 1.1)}, 0)`}>
                       <rect
                         x={0}
@@ -237,7 +295,9 @@ export function Day1() {
               transform={`translate(${
                 (maxLineLength + 1) * (CHAR_SIZE * 1.1)
               }, ${
-                programState.lines.length * (CHAR_SIZE * 1.1) + Y_MARGIN + 10
+                programState.lineResults.length * (CHAR_SIZE * 1.1) +
+                Y_MARGIN +
+                10
               })`}
             >
               <rect
@@ -275,30 +335,31 @@ export function Day1() {
               className="transition-all"
               transform={`translate(${sheepPosition.x}, ${sheepPosition.y})`}
             >
-              <circle
-                cx={CHAR_SIZE / 1.5}
-                cy={CHAR_SIZE / 1.5}
-                r={CHAR_SIZE / 1.5}
-                fill="rgba(0, 0, 0, 0.1)"
-                transform={`translate(-10, -13)`}
-              />
-              <image
-                href="/sheep.svg"
-                x="0"
-                y={CHAR_SIZE * -1}
-                height={CHAR_SIZE}
-                width={CHAR_SIZE}
-              />
+              {!programState.solved && (
+                <circle
+                  cx={CHAR_SIZE / 1.5}
+                  cy={CHAR_SIZE / 1.5}
+                  r={CHAR_SIZE / 1.5}
+                  fill="rgba(0, 0, 0, 0.1)"
+                  transform={`translate(-10, -13)`}
+                />
+              )}
+              {sheepImage(programState.status)}
               {programState.message && (
                 <g transform={`translate(${CHAR_SIZE}, ${CHAR_SIZE * -1})`}>
                   <image
                     href={think}
                     x="0"
-                    y={CHAR_SIZE * -1}
+                    y={SHEEP_SIZE * -1}
                     height={CHAR_SIZE * 1.5}
                     width={CHAR_SIZE * 1.5}
                   />
-                  <text fontSize={24} y={-10} x={20} fill="black">
+                  <text
+                    fontSize={24}
+                    y={SHEEP_SIZE * -1 + 30}
+                    x={20}
+                    fill="black"
+                  >
                     {programState.message}
                   </text>
                 </g>
