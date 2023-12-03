@@ -17,7 +17,7 @@ Then sum up the numbers for every line to get a total.`,
 
 Some of the draws are impossible because the number of balls of a given color is more than the actual number present.
 
-How many of the games are actually possible?`,
+Take the games that are actually possible and sum up their IDs.`,
     component: Day2,
   },
 };
@@ -80,6 +80,7 @@ function App() {
               ))}
             </select>
           </div>
+          <h2 className="font-bold text-sm mb-2">Today's task:</h2>
           <ReactMarkdown className="mb-4">
             {DayConfigs[activeDay].description}
           </ReactMarkdown>

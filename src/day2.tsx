@@ -302,12 +302,12 @@ const programStateAtEvent = (
 
 // console.log(solve(REAL_INPUT));
 
-const GAME_HEIGHT = 20;
-const SHEEP_ROW_HEIGHT = GAME_HEIGHT;
+const GAME_HEIGHT = 100;
+const SHEEP_ROW_HEIGHT = 0; // todo revisit sheep row
 const FINAL_ROW_HEIGHT = GAME_HEIGHT;
 const Y_MARGIN = 20;
 const GAME_ID_COL_WIDTH = 40;
-const DRAW_WIDTH = 100;
+const DRAW_WIDTH = 200;
 
 export const Day2 = () => {
   const [input, setInput] = useState(SAMPLE_INPUT);
@@ -325,6 +325,9 @@ export const Day2 = () => {
   const SVG_WIDTH =
     Math.max(...parsedInput.map((game) => game.draws.length * DRAW_WIDTH)) +
     GAME_ID_COL_WIDTH;
+
+  const BLOCK_WIDTH = GAME_HEIGHT * 0.08;
+  const BLOCK_HEIGHT = GAME_HEIGHT * 0.05;
 
   const yIndexForGameIndex = (gameIndex: number) => {
     let draft = gameIndex * GAME_HEIGHT + Y_MARGIN;
@@ -366,7 +369,7 @@ export const Day2 = () => {
   return (
     <div className="h-full flex flex-col">
       <div className="h-0"></div>
-      <div className="p-4 h-24 border-b border-gray-300">
+      <div className="px-4 py-2 border-b border-gray-300">
         <div className="flex justify-between">
           <div>
             <button
@@ -394,7 +397,7 @@ export const Day2 = () => {
             <input
               type="range"
               min="1"
-              max="20"
+              max="100"
               value={speed}
               onChange={(e) => setSpeed(Number(e.target.value))}
             />
@@ -445,7 +448,6 @@ export const Day2 = () => {
                 )}
                 <text y={GAME_HEIGHT * 0.5} x={GAME_ID_COL_WIDTH * 0.3 + 3}>
                   <tspan
-                    fill="rgb(0, 0, 0, 0.8)"
                     fill={
                       currentState.invalidGameIds.includes(gameIndex + 1)
                         ? "lightgray"
@@ -464,27 +466,78 @@ export const Day2 = () => {
                     {gameIndex + 1}
                   </tspan>
                 </text>
+                {currentState.invalidGameIds.includes(gameIndex + 1) && (
+                  <g>
+                    <line
+                      x1={GAME_ID_COL_WIDTH * 0.2}
+                      y1={GAME_HEIGHT * 0.2}
+                      x2={GAME_ID_COL_WIDTH * 0.6}
+                      y2={GAME_HEIGHT * 0.6}
+                      stroke="rgb(0, 0, 0, 0.3)"
+                    />
+                    <line
+                      x1={GAME_ID_COL_WIDTH * 0.6}
+                      y1={GAME_HEIGHT * 0.2}
+                      x2={GAME_ID_COL_WIDTH * 0.2}
+                      y2={GAME_HEIGHT * 0.6}
+                      stroke="rgb(0, 0, 0, 0.3)"
+                    />
+                  </g>
+                )}
               </g>
-              {game.draws.map((draw, drawIndex) => (
-                <g
-                  key={drawIndex}
-                  transform={`translate(${
-                    GAME_ID_COL_WIDTH + 10 + drawIndex * DRAW_WIDTH
-                  }, 0)`}
-                >
-                  <rect
-                    width={DRAW_WIDTH * 0.8}
-                    height={GAME_HEIGHT * 0.8}
-                    fill={
-                      currentState.currentEvent.tag === "VisitDraw" &&
-                      currentState.currentEvent.gameIndex === gameIndex &&
-                      currentState.currentEvent.drawIndex === drawIndex
-                        ? "red"
-                        : "rgb(200, 200, 200)"
-                    }
-                  />
-                </g>
-              ))}
+              {game.draws.map((draw, drawIndex) => {
+                const drawActive =
+                  currentState.currentEvent.tag === "VisitDraw" &&
+                  currentState.currentEvent.gameIndex === gameIndex &&
+                  currentState.currentEvent.drawIndex === drawIndex;
+                return (
+                  <g
+                    className="transition-all"
+                    key={drawIndex}
+                    transform={`translate(${
+                      GAME_ID_COL_WIDTH + 10 + drawIndex * DRAW_WIDTH
+                    }, 0)`}
+                    opacity={drawActive ? 1.0 : 0.5}
+                  >
+                    <rect
+                      width={DRAW_WIDTH * 0.8}
+                      height={GAME_HEIGHT * 0.8}
+                      stroke="rgb(0, 0, 0, 0.3)"
+                      fill="none"
+                      opacity={drawActive ? 1.0 : 0.1}
+                    />
+                    {["red", "green", "blue"].map((color, index) => (
+                      <g
+                        key={index}
+                        transform={
+                          drawActive ? `translate(0, ${GAME_HEIGHT * 0.7})` : ""
+                        }
+                        className="transition-transform duration-[100ms]"
+                      >
+                        {Array.from({ length: draw[color] }).map(
+                          (_, squareIndex) => (
+                            <rect
+                              key={squareIndex}
+                              x={
+                                DRAW_WIDTH * 0.3 +
+                                DRAW_WIDTH * 0.5 * (index / 3)
+                              }
+                              y={
+                                GAME_HEIGHT * 0.7 -
+                                squareIndex *
+                                  (BLOCK_HEIGHT + BLOCK_HEIGHT * 0.5)
+                              }
+                              width={BLOCK_WIDTH}
+                              height={BLOCK_HEIGHT}
+                              fill={color}
+                            />
+                          )
+                        )}
+                      </g>
+                    ))}
+                  </g>
+                );
+              })}
             </g>
           ))}
           <g
