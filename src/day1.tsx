@@ -8,9 +8,6 @@ import think from "./assets/think.svg";
 import { part1input } from "./day1input";
 import { solvePart2 } from "./part2";
 import React from "react";
-import { solveDay2 } from "./day2";
-
-solveDay2();
 
 // Something is wrong with global snow production, and you've been selected to take a look. The Elves have even given you a map; on it, they've used stars to mark the top fifty locations that are likely to be having problems.
 
@@ -235,6 +232,7 @@ export function Day1() {
   const inputLines = useMemo(() => input.split("\n"), [input]);
   const [activeStateIndex, setActiveStateIndex] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [speed, setSpeed] = useState(2);
   const programStates = useMemo(() => solve(input), [input]);
   const programState = programStates[activeStateIndex];
   // const CHAR_SIZE = SVG_HEIGHT / inputLines.length / 10;
@@ -243,7 +241,6 @@ export function Day1() {
   const maxLineLength = Math.max(...inputLines.map((line) => line.length));
   const SVG_HEIGHT = CHAR_SIZE * 1.1 * inputLines.length + Y_MARGIN;
   const SVG_WIDTH = CHAR_SIZE * maxLineLength;
-  const [speed, setSpeed] = useState(2);
 
   useEffect(() => {
     setActiveStateIndex(0);

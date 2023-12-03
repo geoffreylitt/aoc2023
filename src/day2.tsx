@@ -24,18 +24,7 @@
 
 // Determine which games would have been possible if the bag had been loaded with only 12 red cubes, 13 green cubes, and 14 blue cubes. What is the sum of the IDs of those games?
 
-import React from "react";
-
-type Draw = {
-  red: number;
-  blue: number;
-  green: number;
-};
-
-type Game = {
-  id: number;
-  draws: Draw[];
-};
+import React, { useEffect, useMemo, useState } from "react";
 
 const SAMPLE_INPUT = `Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green
 Game 2: 1 blue, 2 green; 3 green, 4 blue, 1 red; 1 green, 1 blue
@@ -144,6 +133,46 @@ Game 98: 14 blue, 3 green; 2 red, 15 blue, 3 green; 15 blue, 8 green, 1 red; 1 r
 Game 99: 2 green, 7 blue; 14 red, 1 green, 4 blue; 8 blue, 13 red, 2 green; 10 green, 7 red, 10 blue
 Game 100: 5 green, 11 blue, 6 red; 5 green, 12 blue; 1 green, 14 blue, 1 red; 3 blue, 5 red, 6 green; 9 blue; 6 red`;
 
+type Draw = {
+  red: number;
+  blue: number;
+  green: number;
+};
+
+// the ID of a game is inplicit in the order of games
+type Game = {
+  draws: Draw[];
+};
+
+type Input = Game[];
+
+type SolveEvent = Init | VisitDraw | ValidateGame | InvalidateGame | Solved;
+
+type Init = {
+  tag: "Init";
+};
+
+type VisitDraw = {
+  tag: "VisitDraw";
+  gameIndex: number;
+  drawIndex: number;
+  drawIsValid: boolean;
+};
+
+type ValidateGame = {
+  tag: "ValidateGame";
+  gameIndex: number;
+};
+
+type InvalidateGame = {
+  tag: "InvalidateGame";
+  gameIndex: number;
+};
+
+type Solved = {
+  tag: "Solved";
+};
+
 // take in a string like "3 blue, 4 red" and return a Draw object
 const parseDraw = (drawString: string): Draw => {
   const result = { red: 0, blue: 0, green: 0 };
@@ -161,43 +190,189 @@ const parseDraw = (drawString: string): Draw => {
 const parseInput = (input: string): Game[] => {
   const lines = input.split("\n");
   return lines.map((line) => {
-    const [gameIdString, drawsString] = line.split(":");
-    const gameId = gameIdString.match(/\d+/)[0];
+    const drawsString = line.split(":")[1];
     const draws = drawsString
       .split(";")
       .map((drawString) => parseDraw(drawString));
-    const game = { id: parseInt(gameId), draws };
+    const game = { draws };
     return game;
   });
 };
 
-export const solveDay2 = () => {
-  const input = parseInput(REAL_INPUT);
+const solve = (input: string) => {
+  const solveEvents: SolveEvent[] = [];
+
+  const parsedInput = parseInput(input);
 
   const limits = { red: 12, green: 13, blue: 14 };
 
   const validGameIds = [];
 
-  for (const game of input) {
+  for (const [i, game] of parsedInput.entries()) {
     let isValid = true;
-    for (const draw of game.draws) {
+    for (const [j, draw] of game.draws.entries()) {
       for (const color in draw) {
         if (draw[color] > limits[color]) {
           isValid = false;
         }
       }
+      solveEvents.push({
+        tag: "VisitDraw",
+        gameIndex: i,
+        drawIndex: j,
+        drawIsValid: isValid,
+      });
     }
     if (isValid) {
-      validGameIds.push(game.id);
+      validGameIds.push(i);
+      solveEvents.push({
+        tag: "ValidateGame",
+        gameIndex: i,
+      });
+    } else {
+      solveEvents.push({
+        tag: "InvalidateGame",
+        gameIndex: i,
+      });
     }
   }
 
-  const sum = validGameIds.reduce((a, b) => a + b, 0);
-  return sum;
+  solveEvents.push({
+    tag: "Solved",
+  });
+
+  return solveEvents;
 };
 
-solveDay2();
+type ProgramState = {
+  validGameIds: number[];
+  sum: number;
+  solved: boolean;
+  currentEvent: SolveEvent;
+};
+
+const programStateAtEvent = (
+  input: string,
+  events: SolveEvent[],
+  numberToApply: number
+) => {
+  const state: ProgramState = {
+    validGameIds: [],
+    sum: 0,
+    solved: false,
+    currentEvent: { tag: "Init" },
+  };
+
+  for (let i = 0; i < numberToApply; i++) {
+    const e = events[i];
+    state.currentEvent = e;
+    switch (e.tag) {
+      case "Solved": {
+        state.solved = true;
+        break;
+      }
+      case "ValidateGame": {
+        state.validGameIds.push(e.gameIndex + 1);
+        state.sum = state.validGameIds.reduce((a, b) => a + b, 0);
+        break;
+      }
+
+      // These are events which don't affect the durable state of the game
+
+      case "Init":
+      case "VisitDraw":
+      case "InvalidateGame": {
+        break;
+      }
+
+      default: {
+        const exhaustiveCheck: never = e;
+        return exhaustiveCheck;
+      }
+    }
+  }
+
+  return state;
+};
+
+console.log(solve(REAL_INPUT));
 
 export const Day2 = () => {
-  return <div>Day2</div>;
+  const [input, setInput] = useState(SAMPLE_INPUT);
+  const [activeStateIndex, setActiveStateIndex] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const [speed, setSpeed] = useState(2);
+  const solveEvents = useMemo(() => solve(input), [input]);
+
+  // TODO: extract a shared helper hook for this stuff
+  useEffect(() => {
+    setActiveStateIndex(0);
+  }, [input]);
+
+  useEffect(() => {
+    if (!paused) {
+      const interval = setInterval(() => {
+        setActiveStateIndex((i) => {
+          if (i + 1 === solveEvents.length + 1) {
+            setPaused(true);
+            return i;
+          }
+          return ((i + 1) % solveEvents.length) + 1;
+        });
+      }, 400 / speed);
+      return () => clearInterval(interval);
+    }
+  }, [paused, speed, solveEvents]);
+
+  const currentState = programStateAtEvent(
+    input,
+    solveEvents,
+    activeStateIndex
+  );
+
+  return (
+    <div>
+      <div className="my-1"></div>
+      <div className="p-8">
+        <div className="flex justify-between">
+          <div>
+            <button
+              className="border border-gray-500 rounded-md px-2 py-1 mr-4 w-20"
+              onClick={() => {
+                if (activeStateIndex === solveEvents.length - 1) {
+                  setActiveStateIndex(0);
+                }
+                setPaused((paused) => !paused);
+              }}
+            >
+              {paused ? "Play" : "Pause"}
+            </button>
+
+            <span>Step:</span>
+            <input
+              type="range"
+              min="0"
+              max={solveEvents.length}
+              value={activeStateIndex}
+              onChange={(e) => setActiveStateIndex(Number(e.target.value))}
+              className="mr-2"
+            />
+            <span>Speed:</span>
+            <input
+              type="range"
+              min="1"
+              max="20"
+              value={speed}
+              onChange={(e) => setSpeed(Number(e.target.value))}
+            />
+          </div>
+          <select className="mr-4 " onChange={(e) => setInput(e.target.value)}>
+            <option value={SAMPLE_INPUT}>Sample Input</option>
+          </select>
+        </div>
+      </div>
+      <div>{JSON.stringify(solveEvents)}</div>
+      <div>{JSON.stringify(currentState)}</div>
+    </div>
+  );
 };

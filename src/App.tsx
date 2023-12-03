@@ -13,7 +13,11 @@ Then sum up the numbers for every line to get a total.`,
     component: Day1,
   },
   2: {
-    description: "TODO",
+    description: `In each game, colored balls are drawn from a bag.
+
+Some of the draws are impossible because the number of balls of a given color is more than the actual number present.
+
+How many of the games are actually possible?`,
     component: Day2,
   },
 };
