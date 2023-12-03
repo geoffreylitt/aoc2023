@@ -103,9 +103,11 @@ function App() {
             is a series of daily coding puzzles in December.
           </p>
           <p className="mb-2">
-            Our quest: don't just code solutions, visualize them.
+            Our goal: don't just code solutions, visualize them.
           </p>
-          <p className="mb-2">(How far will we make it? TBD.)</p>
+          <p className="mb-2">
+            (TBD how far we make it on this highly impractical quest...)
+          </p>
           <p>By Geoffrey Litt and Maggie Yellen</p>
         </div>
       </div>

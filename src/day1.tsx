@@ -227,7 +227,7 @@ const InputLines = ({
 };
 
 const MemoizedInputLines = React.memo(InputLines, (prevProps, nextProps) => {
-  prevProps.inputLines === nextProps.inputLines;
+  return prevProps.inputLines === nextProps.inputLines;
 });
 
 export function Day1() {

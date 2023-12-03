@@ -58,7 +58,9 @@ export const solvePart2 = (input: string) => {
     const rawDigits = line.match(
       /\d|zero|one|two|three|four|five|six|seven|eight|nine/g
     )!;
-    const digits = rawDigits?.map((digit) => parseInt(wordMap[digit] ?? digit));
+    const digits = rawDigits?.map((digit) =>
+      wordMap[digit] ? wordMap[digit] : parseInt(digit)
+    );
     const number = digits[0] * 10 + digits[digits.length - 1];
     sum += number;
   }
