@@ -303,8 +303,9 @@ const programStateAtEvent = (
 console.log(solve(REAL_INPUT));
 
 const GAME_HEIGHT = 20;
-const SHEEP_ROW_HEIGHT = GAME_HEIGHT * 0.6;
-const TOP_MARGIN = 20;
+const SHEEP_ROW_HEIGHT = GAME_HEIGHT;
+const FINAL_ROW_HEIGHT = GAME_HEIGHT;
+const Y_MARGIN = 20;
 const GAME_ID_COL_WIDTH = 40;
 const DRAW_WIDTH = 100;
 
@@ -317,13 +318,16 @@ export const Day2 = () => {
   const solveEvents = useMemo(() => solve(input), [input]);
 
   const SVG_HEIGHT =
-    parsedInput.length * GAME_HEIGHT + TOP_MARGIN + SHEEP_ROW_HEIGHT;
+    Y_MARGIN * 2 +
+    parsedInput.length * GAME_HEIGHT +
+    FINAL_ROW_HEIGHT +
+    SHEEP_ROW_HEIGHT;
   const SVG_WIDTH =
     Math.max(...parsedInput.map((game) => game.draws.length * DRAW_WIDTH)) +
     GAME_ID_COL_WIDTH;
 
   const yIndexForGameIndex = (gameIndex: number) => {
-    let draft = gameIndex * GAME_HEIGHT + TOP_MARGIN;
+    let draft = gameIndex * GAME_HEIGHT + Y_MARGIN;
     if (
       currentState.currentEvent.tag === "VisitDraw" &&
       currentState.currentEvent.gameIndex < gameIndex
@@ -333,7 +337,7 @@ export const Day2 = () => {
     return draft;
   };
 
-  // TODO: extract a shared helper hook for this stuff
+  // TODO: extract a shared helper hook for this playback stuff
   useEffect(() => {
     setActiveStateIndex(0);
   }, [input]);
@@ -346,7 +350,7 @@ export const Day2 = () => {
             setPaused(true);
             return i;
           }
-          return (i + 1) % solveEvents.length;
+          return (i + 1) % (solveEvents.length + 1);
         });
       }, 1000 / speed);
       return () => clearInterval(interval);
@@ -410,10 +414,10 @@ export const Day2 = () => {
         >
           <text
             x={GAME_ID_COL_WIDTH * 0.5}
-            y={TOP_MARGIN * 0.8}
+            y={Y_MARGIN * 0.8}
             textAnchor="middle"
             fill="rgb(0, 0, 0, 0.5)"
-            fontSize={TOP_MARGIN * 0.4}
+            fontSize={Y_MARGIN * 0.4}
           >
             Game ID
           </text>
@@ -427,20 +431,35 @@ export const Day2 = () => {
                 <rect
                   width={GAME_ID_COL_WIDTH * 0.6}
                   height={GAME_HEIGHT * 0.8}
-                  x={GAME_ID_COL_WIDTH * 0.1}
+                  x={GAME_ID_COL_WIDTH * 0.3}
                   fill={
                     currentState.validGameIds.includes(gameIndex + 1)
                       ? "rgb(0, 255, 0, 0.3)"
-                      : currentState.invalidGameIds.includes(gameIndex + 1)
-                      ? "rgb(255, 0, 0, 0.3)"
-                      : "rgb(0, 0, 0, 0.05)"
+                      : "none"
                   }
                 />
-                <text y={GAME_HEIGHT * 0.5} x={GAME_ID_COL_WIDTH * 0.1 + 2}>
+                {currentState.validGameIds.includes(gameIndex + 1) && (
+                  <text y={GAME_HEIGHT * 0.6} x={GAME_ID_COL_WIDTH * 0.1}>
+                    +
+                  </text>
+                )}
+                <text y={GAME_HEIGHT * 0.5} x={GAME_ID_COL_WIDTH * 0.3 + 3}>
                   <tspan
-                    fill="rgb(0, 0, 0, 0.8"
+                    fill="rgb(0, 0, 0, 0.8)"
+                    fill={
+                      currentState.invalidGameIds.includes(gameIndex + 1)
+                        ? "lightgray"
+                        : "rgb(0, 0, 0, 0.8)"
+                    }
                     fontWeight={"bold"}
                     fontSize={GAME_HEIGHT * 0.4}
+                    style={{
+                      textDecoration: currentState.invalidGameIds.includes(
+                        gameIndex + 1
+                      )
+                        ? "line-through"
+                        : "none",
+                    }}
                   >
                     {gameIndex + 1}
                   </tspan>
@@ -468,6 +487,37 @@ export const Day2 = () => {
               ))}
             </g>
           ))}
+          <g
+            transform={`translate(0, ${yIndexForGameIndex(
+              parsedInput.length
+            )})`}
+            className={`transition-transform duration-[${1000 / speed}ms]`}
+          >
+            <g transform={`translate(${GAME_ID_COL_WIDTH * 0.2}, 0)`}>
+              <rect
+                width={GAME_ID_COL_WIDTH}
+                height={FINAL_ROW_HEIGHT}
+                stroke={"rgb(0, 0, 0, 0.5)"}
+                fill={currentState.solved ? "rgb(0, 255, 0, 0.3)" : "white"}
+              />
+              <text
+                y={FINAL_ROW_HEIGHT * 0.6}
+                x={GAME_ID_COL_WIDTH * 0.1}
+                fontSize={FINAL_ROW_HEIGHT * 0.5}
+                fill={
+                  currentState.solved
+                    ? "rgb(0, 0, 0, 0.8)"
+                    : "rgb(0, 0, 0, 0.4)"
+                }
+              >
+                {currentState.sum}
+              </text>
+            </g>
+
+            <text y={FINAL_ROW_HEIGHT * 0.6} fontSize={FINAL_ROW_HEIGHT * 0.5}>
+              =
+            </text>
+          </g>
         </svg>
       </div>
     </div>
