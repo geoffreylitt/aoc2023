@@ -277,8 +277,6 @@ export function Day1() {
     };
   }
 
-  console.log({ activeStateIndex, length: programStates.length });
-
   return (
     <div className="p-8">
       <div className="flex justify-between">

@@ -14,7 +14,7 @@ exec("yarn build", (error, stdout, stderr) => {
   console.log(`stdout: ${stdout}`);
   console.error(`stderr: ${stderr}`);
 
-  exec("cp -r dist/* ../homepage/source/aoc2023", (error, stdout, stderr) => {
+  exec("cp -r dist/* ../homepage/aoc2023", (error, stdout, stderr) => {
     if (error) {
       console.error(`exec error: ${error}`);
       return;

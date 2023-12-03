@@ -31,7 +31,8 @@ const getDayFromWindowHash = () => {
   if (DayConfigs[hashDay]?.component) {
     return hashDay;
   }
-  return 1;
+  const maxDay = Math.max(...Object.keys(DayConfigs).map(Number));
+  return maxDay;
 };
 
 function App() {

@@ -378,9 +378,9 @@ export const Day2 = () => {
   const TICK_INTERVAL = 1000 / speed;
 
   // TODO: extract a shared helper hook for this playback stuff
-  // useEffect(() => {
-  //   setActiveStateIndex(0);
-  // }, [input]);
+  useEffect(() => {
+    setActiveStateIndex(0);
+  }, [input]);
 
   useEffect(() => {
     if (!paused) {
@@ -452,7 +452,7 @@ export const Day2 = () => {
       const gameIndex = currentState.currentEvent.gameIndex;
       const yPositionInSVG = Math.max(
         0,
-        yIndexForGameIndex(gameIndex) - GAME_HEIGHT * 2.5
+        yIndexForGameIndex(gameIndex) - GAME_HEIGHT * 1.8
       );
       const percentageDownSVG = yPositionInSVG / SVG_HEIGHT;
       if (!scrollerRef.current || !svgRef.current) {
