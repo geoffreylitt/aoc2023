@@ -44,7 +44,7 @@ xtwone3four
 zoneight234
 7pqrstsixteen`;
 
-console.log("part 2", solvePart2(part1input));
+// console.log("part 2", solvePart2(part1input));
 
 // const clone = <T extends any>(obj: T): T => JSON.parse(JSON.stringify(obj));
 const clone = window.structuredClone;

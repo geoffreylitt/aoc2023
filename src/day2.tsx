@@ -300,7 +300,7 @@ const programStateAtEvent = (
   return state;
 };
 
-console.log(solve(REAL_INPUT));
+// console.log(solve(REAL_INPUT));
 
 const GAME_HEIGHT = 20;
 const SHEEP_ROW_HEIGHT = GAME_HEIGHT;
