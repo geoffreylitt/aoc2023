@@ -368,6 +368,7 @@ export const Day2 = () => {
           </div>
           <select className="mr-4 " onChange={(e) => setInput(e.target.value)}>
             <option value={SAMPLE_INPUT}>Sample Input</option>
+            <option value={REAL_INPUT}>Real Input</option>
           </select>
         </div>
       </div>
