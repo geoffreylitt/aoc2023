@@ -6,7 +6,11 @@ import sheepSide from "./assets/sheep-side.png";
 import sheepParty from "./assets/sheep-party.png";
 import think from "./assets/think.svg";
 import { part1input } from "./day1input";
+import { solvePart2 } from "./part2";
 import React from "react";
+import { solveDay2 } from "./day2";
+
+solveDay2();
 
 // Something is wrong with global snow production, and you've been selected to take a look. The Elves have even given you a map; on it, they've used stars to mark the top fifty locations that are likely to be having problems.
 
@@ -34,6 +38,16 @@ const SAMPLE_INPUT = `1abc2
 pqr3stu8vwx
 a1b2c3d4e5f
 treb7uchet`;
+
+const SAMPLE_INPUT_2 = `two1nine
+eightwothree
+abcone2threexyz
+xtwone3four
+4nineeightseven2
+zoneight234
+7pqrstsixteen`;
+
+console.log("part 2", solvePart2(part1input));
 
 // const clone = <T extends any>(obj: T): T => JSON.parse(JSON.stringify(obj));
 const clone = window.structuredClone;
@@ -268,38 +282,45 @@ export function Day1() {
 
   return (
     <div className="p-8">
-      <h1 className=" text-xl mb-4">Day 1</h1>
-      <div>
-        <select onChange={(e) => setInput(e.target.value)}>
+      <div className="flex justify-between">
+        <div>
+          <button
+            className="border border-gray-500 rounded-md px-2 py-1 mr-4 w-20"
+            onClick={() => {
+              if (activeStateIndex === programStates.length - 1) {
+                setActiveStateIndex(0);
+              }
+              setPaused((paused) => !paused);
+            }}
+          >
+            {paused ? "Play" : "Pause"}
+          </button>
+
+          <span>Step:</span>
+          <input
+            type="range"
+            min="0"
+            max={programStates.length - 1}
+            value={activeStateIndex}
+            onChange={(e) => setActiveStateIndex(Number(e.target.value))}
+            className="mr-2"
+          />
+          <span>Speed:</span>
+          <input
+            type="range"
+            min="1"
+            max="20"
+            value={speed}
+            onChange={(e) => setSpeed(Number(e.target.value))}
+          />
+        </div>
+        <select className="mr-4 " onChange={(e) => setInput(e.target.value)}>
           <option value={SAMPLE_INPUT}>Sample Input</option>
-          <option value={part1input}>Real Input</option>
+          <option value={part1input}>
+            Real Input (⚠️ WARNING: Very slow!!!)
+          </option>
         </select>
       </div>
-
-      <button
-        className="border border-gray-500 rounded-md px-2 py-1 mr-4"
-        onClick={() => setPaused((paused) => !paused)}
-      >
-        {paused ? "Play" : "Pause"}
-      </button>
-
-      <span>Step:</span>
-      <input
-        type="range"
-        min="0"
-        max={programStates.length - 1}
-        value={activeStateIndex}
-        onChange={(e) => setActiveStateIndex(Number(e.target.value))}
-        className="mr-2"
-      />
-      <span>Speed:</span>
-      <input
-        type="range"
-        min="1"
-        max="20"
-        value={speed}
-        onChange={(e) => setSpeed(Number(e.target.value))}
-      />
       <div className="flex">
         <div className="flex-grow bg-gray-100 p-4 text-[50px] font-mono h-screen overflow-auto">
           <svg viewBox={`0 0 ${SVG_WIDTH * 2} ${SVG_HEIGHT * 2}`}>
