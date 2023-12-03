@@ -246,6 +246,7 @@ const solve = (input: string) => {
 
 type ProgramState = {
   validGameIds: number[];
+  invalidGameIds: number[];
   sum: number;
   solved: boolean;
   currentEvent: SolveEvent;
@@ -258,6 +259,7 @@ const programStateAtEvent = (
 ) => {
   const state: ProgramState = {
     validGameIds: [],
+    invalidGameIds: [],
     sum: 0,
     solved: false,
     currentEvent: { tag: "Init" },
@@ -276,12 +278,15 @@ const programStateAtEvent = (
         state.sum = state.validGameIds.reduce((a, b) => a + b, 0);
         break;
       }
+      case "InvalidateGame": {
+        state.invalidGameIds.push(e.gameIndex + 1);
+        break;
+      }
 
       // These are events which don't affect the durable state of the game
 
       case "Init":
-      case "VisitDraw":
-      case "InvalidateGame": {
+      case "VisitDraw": {
         break;
       }
 
@@ -297,12 +302,36 @@ const programStateAtEvent = (
 
 console.log(solve(REAL_INPUT));
 
+const GAME_HEIGHT = 20;
+const SHEEP_ROW_HEIGHT = GAME_HEIGHT * 0.6;
+const TOP_MARGIN = 20;
+const GAME_ID_COL_WIDTH = 40;
+const DRAW_WIDTH = 100;
+
 export const Day2 = () => {
   const [input, setInput] = useState(SAMPLE_INPUT);
   const [activeStateIndex, setActiveStateIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const [speed, setSpeed] = useState(2);
+  const parsedInput = useMemo(() => parseInput(input), [input]);
   const solveEvents = useMemo(() => solve(input), [input]);
+
+  const SVG_HEIGHT =
+    parsedInput.length * GAME_HEIGHT + TOP_MARGIN + SHEEP_ROW_HEIGHT;
+  const SVG_WIDTH =
+    Math.max(...parsedInput.map((game) => game.draws.length * DRAW_WIDTH)) +
+    GAME_ID_COL_WIDTH;
+
+  const yIndexForGameIndex = (gameIndex: number) => {
+    let draft = gameIndex * GAME_HEIGHT + TOP_MARGIN;
+    if (
+      currentState.currentEvent.tag === "VisitDraw" &&
+      currentState.currentEvent.gameIndex < gameIndex
+    ) {
+      draft = draft + SHEEP_ROW_HEIGHT;
+    }
+    return draft;
+  };
 
   // TODO: extract a shared helper hook for this stuff
   useEffect(() => {
@@ -317,9 +346,9 @@ export const Day2 = () => {
             setPaused(true);
             return i;
           }
-          return ((i + 1) % solveEvents.length) + 1;
+          return (i + 1) % solveEvents.length;
         });
-      }, 400 / speed);
+      }, 1000 / speed);
       return () => clearInterval(interval);
     }
   }, [paused, speed, solveEvents]);
@@ -331,9 +360,9 @@ export const Day2 = () => {
   );
 
   return (
-    <div>
-      <div className="my-1"></div>
-      <div className="p-8">
+    <div className="h-full flex flex-col">
+      <div className="h-0"></div>
+      <div className="p-4 h-24 border-b border-gray-300">
         <div className="flex justify-between">
           <div>
             <button
@@ -372,8 +401,75 @@ export const Day2 = () => {
           </select>
         </div>
       </div>
-      <div>{JSON.stringify(solveEvents)}</div>
-      <div>{JSON.stringify(currentState)}</div>
+      {/* <div>{JSON.stringify(solveEvents)}</div> */}
+      {/* <div>{JSON.stringify(currentState)}</div> */}
+      <div className="flex-grow overflow-y-auto">
+        <svg
+          viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`}
+          fontFamily="Schoolbell, sans-serif"
+        >
+          <text
+            x={GAME_ID_COL_WIDTH * 0.5}
+            y={TOP_MARGIN * 0.8}
+            textAnchor="middle"
+            fill="rgb(0, 0, 0, 0.5)"
+            fontSize={TOP_MARGIN * 0.4}
+          >
+            Game ID
+          </text>
+          {parsedInput.map((game, gameIndex) => (
+            <g
+              key={gameIndex}
+              transform={`translate(0, ${yIndexForGameIndex(gameIndex)})`}
+              className={`transition-transform duration-[${1000 / speed}ms]`}
+            >
+              <g transform={`translate(0, 0})`} width={GAME_ID_COL_WIDTH * 0.3}>
+                <rect
+                  width={GAME_ID_COL_WIDTH * 0.6}
+                  height={GAME_HEIGHT * 0.8}
+                  x={GAME_ID_COL_WIDTH * 0.1}
+                  fill={
+                    currentState.validGameIds.includes(gameIndex + 1)
+                      ? "rgb(0, 255, 0, 0.3)"
+                      : currentState.invalidGameIds.includes(gameIndex + 1)
+                      ? "rgb(255, 0, 0, 0.3)"
+                      : "rgb(0, 0, 0, 0.05)"
+                  }
+                />
+                <text y={GAME_HEIGHT * 0.5} x={GAME_ID_COL_WIDTH * 0.1 + 2}>
+                  <tspan
+                    fill="rgb(0, 0, 0, 0.8"
+                    fontWeight={"bold"}
+                    fontSize={GAME_HEIGHT * 0.4}
+                  >
+                    {gameIndex + 1}
+                  </tspan>
+                </text>
+              </g>
+              {game.draws.map((draw, drawIndex) => (
+                <g
+                  key={drawIndex}
+                  transform={`translate(${
+                    GAME_ID_COL_WIDTH + 10 + drawIndex * DRAW_WIDTH
+                  }, 0)`}
+                >
+                  <rect
+                    width={DRAW_WIDTH * 0.8}
+                    height={GAME_HEIGHT * 0.8}
+                    fill={
+                      currentState.currentEvent.tag === "VisitDraw" &&
+                      currentState.currentEvent.gameIndex === gameIndex &&
+                      currentState.currentEvent.drawIndex === drawIndex
+                        ? "red"
+                        : "rgb(200, 200, 200)"
+                    }
+                  />
+                </g>
+              ))}
+            </g>
+          ))}
+        </svg>
+      </div>
     </div>
   );
 };
