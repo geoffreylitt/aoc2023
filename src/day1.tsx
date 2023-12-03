@@ -277,6 +277,8 @@ export function Day1() {
     };
   }
 
+  console.log({ activeStateIndex, length: programStates.length });
+
   return (
     <div className="p-8">
       <div className="flex justify-between">
@@ -284,7 +286,7 @@ export function Day1() {
           <button
             className="border border-gray-500 rounded-md px-2 py-1 mr-4 w-20"
             onClick={() => {
-              if (activeStateIndex === programStates.length - 1) {
+              if (activeStateIndex === programStates.length + 1) {
                 setActiveStateIndex(0);
               }
               setPaused((paused) => !paused);

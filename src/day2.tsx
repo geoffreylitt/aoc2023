@@ -24,7 +24,7 @@
 
 // Determine which games would have been possible if the bag had been loaded with only 12 red cubes, 13 green cubes, and 14 blue cubes. What is the sum of the IDs of those games?
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import sheepBackpack from "./assets/sheep-backpack.png";
 import sheepFront from "./assets/sheep-front.png";
 import sheepParty from "./assets/sheep-party.png";
@@ -319,7 +319,7 @@ const BLOCK_IMAGES = {
 
 const GAME_HEIGHT = 100;
 const SHEEP_ROW_HEIGHT = GAME_HEIGHT; // todo revisit sheep row
-const FINAL_ROW_HEIGHT = GAME_HEIGHT;
+const FINAL_ROW_HEIGHT = GAME_HEIGHT * 0.5;
 const Y_MARGIN = 20;
 const GAME_ID_COL_WIDTH = 40;
 const DRAW_WIDTH = 200;
@@ -345,7 +345,7 @@ const getSheepImage = (state: ProgramState) => {
 };
 
 export const Day2 = () => {
-  const [input, setInput] = useState(SAMPLE_INPUT);
+  const [input, setInput] = useState(REAL_INPUT);
   const [activeStateIndex, setActiveStateIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const [speed, setSpeed] = useState(2);
@@ -375,6 +375,8 @@ export const Day2 = () => {
     return draft;
   };
 
+  const TICK_INTERVAL = 1000 / speed;
+
   // TODO: extract a shared helper hook for this playback stuff
   // useEffect(() => {
   //   setActiveStateIndex(0);
@@ -390,7 +392,7 @@ export const Day2 = () => {
           }
           return (i + 1) % (solveEvents.length + 1);
         });
-      }, 1000 / speed);
+      }, TICK_INTERVAL);
       return () => clearInterval(interval);
     }
   }, [paused, speed, solveEvents]);
@@ -424,7 +426,7 @@ export const Day2 = () => {
     }
     case "Solved": {
       sheepPosition = {
-        x: 0,
+        x: GAME_ID_COL_WIDTH,
         y: yIndexForGameIndex(parsedInput.length - 1) + FINAL_ROW_HEIGHT,
       };
       break;
@@ -438,6 +440,30 @@ export const Day2 = () => {
     sheepScale = 1;
   }
 
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
+
+  useEffect(() => {
+    if (
+      currentState.currentEvent.tag === "VisitDraw" ||
+      currentState.currentEvent.tag === "ValidateGame" ||
+      currentState.currentEvent.tag === "InvalidateGame"
+    ) {
+      const gameIndex = currentState.currentEvent.gameIndex;
+      const yPositionInSVG = Math.max(
+        0,
+        yIndexForGameIndex(gameIndex) - GAME_HEIGHT * 2.5
+      );
+      const percentageDownSVG = yPositionInSVG / SVG_HEIGHT;
+      if (!scrollerRef.current || !svgRef.current) {
+        return;
+      }
+      const svgHeight = svgRef.current.getBoundingClientRect().height;
+      const newScrollPos = percentageDownSVG * svgHeight;
+      scrollerRef.current.scrollTo({ top: newScrollPos, behavior: "smooth" });
+    }
+  }, [activeStateIndex, SVG_HEIGHT]);
+
   return (
     <div className="h-full flex flex-col">
       <div className="h-0"></div>
@@ -447,7 +473,7 @@ export const Day2 = () => {
             <button
               className="border border-gray-500 rounded-md px-2 py-1 mr-4 w-20"
               onClick={() => {
-                if (activeStateIndex === solveEvents.length - 1) {
+                if (activeStateIndex === solveEvents.length) {
                   setActiveStateIndex(0);
                 }
                 setPaused((paused) => !paused);
@@ -469,7 +495,7 @@ export const Day2 = () => {
             <input
               type="range"
               min="1"
-              max="100"
+              max="10"
               value={speed}
               onChange={(e) => setSpeed(Number(e.target.value))}
               className="mr-8"
@@ -479,7 +505,11 @@ export const Day2 = () => {
               <span className="font-mono">{currentState.currentEvent.tag}</span>
             </span>
           </div>
-          <select className="mr-4 " onChange={(e) => setInput(e.target.value)}>
+          <select
+            className="mr-4 "
+            onChange={(e) => setInput(e.target.value)}
+            value={input}
+          >
             <option value={SAMPLE_INPUT}>Sample Input</option>
             <option value={REAL_INPUT}>Real Input</option>
           </select>
@@ -487,10 +517,11 @@ export const Day2 = () => {
       </div>
       {/* <div>{JSON.stringify(solveEvents)}</div> */}
       {/* <div>{JSON.stringify(currentState)}</div> */}
-      <div className="flex-grow overflow-y-auto">
+      <div className="flex-grow overflow-y-auto" ref={scrollerRef}>
         <svg
           viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`}
           fontFamily="Schoolbell, sans-serif"
+          ref={svgRef}
         >
           {/* game id label */}
           <text
@@ -508,13 +539,14 @@ export const Day2 = () => {
             <g
               key={gameIndex}
               transform={`translate(0, ${yIndexForGameIndex(gameIndex)})`}
-              className={`transition-transform duration-[${1000 / speed}ms]`}
+              className={`transition-transform duration-[${TICK_INTERVAL}ms]`}
             >
               <g width={GAME_ID_COL_WIDTH * 0.3}>
                 <rect
                   width={GAME_ID_COL_WIDTH * 0.6}
-                  height={GAME_HEIGHT * 0.8}
+                  height={GAME_HEIGHT * 0.3}
                   x={GAME_ID_COL_WIDTH * 0.3}
+                  y={GAME_HEIGHT * 0.3}
                   fill={
                     currentState.validGameIds.includes(gameIndex + 1)
                       ? "rgb(0, 255, 0, 0.3)"
@@ -522,7 +554,7 @@ export const Day2 = () => {
                   }
                 />
                 {currentState.validGameIds.includes(gameIndex + 1) && (
-                  <text y={GAME_HEIGHT * 0.6} x={GAME_ID_COL_WIDTH * 0.1}>
+                  <text y={GAME_HEIGHT * 0.5} x={GAME_ID_COL_WIDTH * 0.1}>
                     +
                   </text>
                 )}
@@ -598,6 +630,25 @@ export const Day2 = () => {
                         }
                         className="transition-transform duration-[100ms]"
                       >
+                        {draw[color] >
+                          (color === "red"
+                            ? 12
+                            : color === "green"
+                            ? 13
+                            : 14) &&
+                          drawActive && (
+                            <rect
+                              x={
+                                DRAW_WIDTH * 0.5 +
+                                DRAW_WIDTH * 0.2 * (index / 3) -
+                                BLOCK_WIDTH / 2
+                              }
+                              y={GAME_HEIGHT * 0.7 - draw[color] * BLOCK_HEIGHT}
+                              width={BLOCK_WIDTH * 2}
+                              height={BLOCK_HEIGHT * draw[color]}
+                              fill="yellow"
+                            />
+                          )}
                         {Array.from({ length: draw[color] }).map(
                           (_, squareIndex) => (
                             <image
@@ -633,7 +684,11 @@ export const Day2 = () => {
             />
             {currentState.currentEvent.tag === "VisitDraw" &&
               !currentState.currentEvent.drawIsValid && (
-                <text x={DRAW_WIDTH * 0.6} y={SHEEP_ROW_HEIGHT}>
+                <text
+                  x={DRAW_WIDTH * 0.6}
+                  y={SHEEP_ROW_HEIGHT}
+                  fontSize={GAME_HEIGHT * 0.3}
+                >
                   💢
                 </text>
               )}
@@ -644,7 +699,7 @@ export const Day2 = () => {
             transform={`translate(0, ${yIndexForGameIndex(
               parsedInput.length
             )})`}
-            className={`transition-transform duration-[${1000 / speed}ms]`}
+            className={`transition-transform duration-[${TICK_INTERVAL}ms]`}
           >
             <g transform={`translate(${GAME_ID_COL_WIDTH * 0.2}, 0)`}>
               <rect
@@ -667,8 +722,8 @@ export const Day2 = () => {
               </text>
             </g>
 
-            <text y={FINAL_ROW_HEIGHT * 0.6} fontSize={FINAL_ROW_HEIGHT * 0.5}>
-              =
+            <text x={GAME_ID_COL_WIDTH * 0.2} fontSize={FINAL_ROW_HEIGHT * 0.5}>
+              ---
             </text>
           </g>
         </svg>
