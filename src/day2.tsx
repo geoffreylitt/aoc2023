@@ -25,6 +25,13 @@
 // Determine which games would have been possible if the bag had been loaded with only 12 red cubes, 13 green cubes, and 14 blue cubes. What is the sum of the IDs of those games?
 
 import React, { useEffect, useMemo, useState } from "react";
+import sheepBackpack from "./assets/sheep-backpack.png";
+import sheepFront from "./assets/sheep-front.png";
+import sheepParty from "./assets/sheep-party.png";
+import sheepSad from "./assets/sheep-sad.png";
+import redBlock from "./assets/red-block.png";
+import blueBlock from "./assets/blue-block.png";
+import greenBlock from "./assets/green-block.png";
 
 const SAMPLE_INPUT = `Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green
 Game 2: 1 blue, 2 green; 3 green, 4 blue, 1 red; 1 green, 1 blue
@@ -222,16 +229,18 @@ const solve = (input: string) => {
         drawIndex: j,
         drawIsValid: isValid,
       });
+      if (!isValid) {
+        solveEvents.push({
+          tag: "InvalidateGame",
+          gameIndex: i,
+        });
+        break;
+      }
     }
     if (isValid) {
       validGameIds.push(i);
       solveEvents.push({
         tag: "ValidateGame",
-        gameIndex: i,
-      });
-    } else {
-      solveEvents.push({
-        tag: "InvalidateGame",
         gameIndex: i,
       });
     }
@@ -302,12 +311,38 @@ const programStateAtEvent = (
 
 // console.log(solve(REAL_INPUT));
 
+const BLOCK_IMAGES = {
+  red: redBlock,
+  blue: blueBlock,
+  green: greenBlock,
+};
+
 const GAME_HEIGHT = 100;
-const SHEEP_ROW_HEIGHT = 0; // todo revisit sheep row
+const SHEEP_ROW_HEIGHT = GAME_HEIGHT; // todo revisit sheep row
 const FINAL_ROW_HEIGHT = GAME_HEIGHT;
 const Y_MARGIN = 20;
 const GAME_ID_COL_WIDTH = 40;
 const DRAW_WIDTH = 200;
+
+const getSheepImage = (state: ProgramState) => {
+  switch (state.currentEvent.tag) {
+    case "Solved": {
+      return sheepParty;
+    }
+    case "Init": {
+      return sheepFront;
+    }
+    case "InvalidateGame": {
+      return sheepSad;
+    }
+    case "VisitDraw": {
+      return sheepBackpack;
+    }
+    case "ValidateGame": {
+      return sheepParty;
+    }
+  }
+};
 
 export const Day2 = () => {
   const [input, setInput] = useState(SAMPLE_INPUT);
@@ -326,7 +361,7 @@ export const Day2 = () => {
     Math.max(...parsedInput.map((game) => game.draws.length * DRAW_WIDTH)) +
     GAME_ID_COL_WIDTH;
 
-  const BLOCK_WIDTH = GAME_HEIGHT * 0.08;
+  const BLOCK_WIDTH = GAME_HEIGHT * 0.05;
   const BLOCK_HEIGHT = GAME_HEIGHT * 0.05;
 
   const yIndexForGameIndex = (gameIndex: number) => {
@@ -341,9 +376,9 @@ export const Day2 = () => {
   };
 
   // TODO: extract a shared helper hook for this playback stuff
-  useEffect(() => {
-    setActiveStateIndex(0);
-  }, [input]);
+  // useEffect(() => {
+  //   setActiveStateIndex(0);
+  // }, [input]);
 
   useEffect(() => {
     if (!paused) {
@@ -365,6 +400,43 @@ export const Day2 = () => {
     solveEvents,
     activeStateIndex
   );
+
+  let sheepPosition = { x: 0, y: 0 };
+  switch (currentState.currentEvent.tag) {
+    case "VisitDraw": {
+      sheepPosition = {
+        x: currentState.currentEvent.drawIndex * DRAW_WIDTH + DRAW_WIDTH * 0.6,
+        y:
+          yIndexForGameIndex(currentState.currentEvent.gameIndex) +
+          GAME_HEIGHT * 0.35,
+      };
+      break;
+    }
+    case "ValidateGame":
+    case "InvalidateGame": {
+      sheepPosition = {
+        x: 0,
+        y:
+          yIndexForGameIndex(currentState.currentEvent.gameIndex - 1) +
+          GAME_HEIGHT,
+      };
+      break;
+    }
+    case "Solved": {
+      sheepPosition = {
+        x: 0,
+        y: yIndexForGameIndex(parsedInput.length - 1) + FINAL_ROW_HEIGHT,
+      };
+      break;
+    }
+  }
+
+  const sheepImage = getSheepImage(currentState);
+
+  let sheepScale = 0.5;
+  if (currentState.currentEvent.tag === "VisitDraw") {
+    sheepScale = 1;
+  }
 
   return (
     <div className="h-full flex flex-col">
@@ -400,7 +472,12 @@ export const Day2 = () => {
               max="100"
               value={speed}
               onChange={(e) => setSpeed(Number(e.target.value))}
+              className="mr-8"
             />
+            <span>
+              Status:{" "}
+              <span className="font-mono">{currentState.currentEvent.tag}</span>
+            </span>
           </div>
           <select className="mr-4 " onChange={(e) => setInput(e.target.value)}>
             <option value={SAMPLE_INPUT}>Sample Input</option>
@@ -415,6 +492,7 @@ export const Day2 = () => {
           viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`}
           fontFamily="Schoolbell, sans-serif"
         >
+          {/* game id label */}
           <text
             x={GAME_ID_COL_WIDTH * 0.5}
             y={Y_MARGIN * 0.8}
@@ -424,13 +502,15 @@ export const Day2 = () => {
           >
             Game ID
           </text>
+
+          {/* row per game */}
           {parsedInput.map((game, gameIndex) => (
             <g
               key={gameIndex}
               transform={`translate(0, ${yIndexForGameIndex(gameIndex)})`}
               className={`transition-transform duration-[${1000 / speed}ms]`}
             >
-              <g transform={`translate(0, 0})`} width={GAME_ID_COL_WIDTH * 0.3}>
+              <g width={GAME_ID_COL_WIDTH * 0.3}>
                 <rect
                   width={GAME_ID_COL_WIDTH * 0.6}
                   height={GAME_HEIGHT * 0.8}
@@ -454,7 +534,7 @@ export const Day2 = () => {
                         : "rgb(0, 0, 0, 0.8)"
                     }
                     fontWeight={"bold"}
-                    fontSize={GAME_HEIGHT * 0.4}
+                    fontSize={GAME_HEIGHT * 0.2}
                     style={{
                       textDecoration: currentState.invalidGameIds.includes(
                         gameIndex + 1
@@ -485,6 +565,8 @@ export const Day2 = () => {
                   </g>
                 )}
               </g>
+
+              {/* draws for the game */}
               {game.draws.map((draw, drawIndex) => {
                 const drawActive =
                   currentState.currentEvent.tag === "VisitDraw" &&
@@ -497,36 +579,35 @@ export const Day2 = () => {
                     transform={`translate(${
                       GAME_ID_COL_WIDTH + 10 + drawIndex * DRAW_WIDTH
                     }, 0)`}
-                    opacity={drawActive ? 1.0 : 0.5}
+                    opacity={drawActive ? 1.0 : 0.7}
                   >
-                    <rect
-                      width={DRAW_WIDTH * 0.8}
-                      height={GAME_HEIGHT * 0.8}
-                      stroke="rgb(0, 0, 0, 0.3)"
-                      fill="none"
-                      opacity={drawActive ? 1.0 : 0.1}
+                    <line
+                      x1={DRAW_WIDTH * 0.4}
+                      y1={GAME_HEIGHT * 0.7 + BLOCK_HEIGHT}
+                      x2={DRAW_WIDTH * 0.7}
+                      y2={GAME_HEIGHT * 0.7 + BLOCK_HEIGHT}
+                      stroke="black"
+                      opacity={drawActive ? 0 : 1}
+                      className="transition-opacity duration-75"
                     />
                     {["red", "green", "blue"].map((color, index) => (
                       <g
                         key={index}
                         transform={
-                          drawActive ? `translate(0, ${GAME_HEIGHT * 0.7})` : ""
+                          drawActive ? `translate(0, ${GAME_HEIGHT * 0.5})` : ""
                         }
                         className="transition-transform duration-[100ms]"
                       >
                         {Array.from({ length: draw[color] }).map(
                           (_, squareIndex) => (
-                            <rect
+                            <image
+                              href={BLOCK_IMAGES[color]}
                               key={squareIndex}
                               x={
-                                DRAW_WIDTH * 0.3 +
-                                DRAW_WIDTH * 0.5 * (index / 3)
+                                DRAW_WIDTH * 0.5 +
+                                DRAW_WIDTH * 0.2 * (index / 3)
                               }
-                              y={
-                                GAME_HEIGHT * 0.7 -
-                                squareIndex *
-                                  (BLOCK_HEIGHT + BLOCK_HEIGHT * 0.5)
-                              }
+                              y={GAME_HEIGHT * 0.7 - squareIndex * BLOCK_HEIGHT}
                               width={BLOCK_WIDTH}
                               height={BLOCK_HEIGHT}
                               fill={color}
@@ -540,6 +621,25 @@ export const Day2 = () => {
               })}
             </g>
           ))}
+
+          {/* wandering sheep */}
+          <g
+            transform={`translate(${sheepPosition.x}, ${sheepPosition.y})`}
+            className="transition-all duration-75"
+          >
+            <image
+              href={sheepImage}
+              height={SHEEP_ROW_HEIGHT * 1.8 * sheepScale}
+            />
+            {currentState.currentEvent.tag === "VisitDraw" &&
+              !currentState.currentEvent.drawIsValid && (
+                <text x={DRAW_WIDTH * 0.6} y={SHEEP_ROW_HEIGHT}>
+                  💢
+                </text>
+              )}
+          </g>
+
+          {/* sum row */}
           <g
             transform={`translate(0, ${yIndexForGameIndex(
               parsedInput.length
