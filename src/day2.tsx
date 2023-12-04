@@ -253,6 +253,25 @@ const solve = (input: string) => {
   return solveEvents;
 };
 
+const solvePart2 = (input: string) => {
+  const parsed = parseInput(input);
+  let sum = 0;
+  for (const game of parsed) {
+    let min = { red: 0, green: 0, blue: 0 };
+    for (const draw of game.draws) {
+      for (const color in draw) {
+        if (draw[color] > min[color]) {
+          min[color] = draw[color];
+        }
+      }
+    }
+    const power = min["red"] * min["green"] * min["blue"];
+    sum += power;
+  }
+
+  return sum;
+};
+
 type ProgramState = {
   validGameIds: number[];
   invalidGameIds: number[];
